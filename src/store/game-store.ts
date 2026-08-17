@@ -34,6 +34,7 @@ interface GameStoreState {
   maxRounds: number; // 5
   roundHistory: RoundResult[];
   matchSummary: MatchSummary | null;
+  unansweredCount: number; // Contador de rondas sin responder (3 = forfeit)
 
   // Ayudas de Archivo (2 por sesión de match)
   lifelinesRemaining: number;
@@ -124,6 +125,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   maxRounds: 5,
   roundHistory: [],
   matchSummary: null,
+  unansweredCount: 0,
 
   lifelinesRemaining: 2,
   eliminatedEventOptions: [],
@@ -163,6 +165,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       roundHistory: [],
       matchSummary: null,
       lifelinesRemaining: 2,
+      unansweredCount: 0,
     });
 
     setTimeout(() => {
@@ -278,6 +281,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       roundHistory: [],
       matchSummary: null,
       lifelinesRemaining: 2,
+      unansweredCount: 0,
     });
     get().startRound();
   },
@@ -420,9 +424,16 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       rivalHypothesisData,
       rival,
       playerStats,
+      unansweredCount,
     } = get();
 
     if (!currentEvidence || !rivalHypothesisData || !rival) return;
+
+    const isUnanswered =
+      timeRemainingSeconds === 0 &&
+      (!playerHypothesis.event_query || playerHypothesis.event_query.trim() === '');
+
+    const newUnansweredCount = isUnanswered ? unansweredCount + 1 : 0;
 
     const playerScore = calculateScore(
       currentEvidence,
@@ -432,7 +443,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       totalTimeSeconds
     );
 
-    const rivalTimeRemaining = rival.lock_timestamp_seconds || 5;
+    const rivalTimeRemaining = rival.lock_timestamp_seconds ?? Math.max(2, Math.floor(totalTimeSeconds * 0.35));
     const rivalScore = calculateScore(
       currentEvidence,
       rivalHypothesisData.hypothesis,
@@ -448,6 +459,30 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       winner = 'RIVAL';
     }
 
+    // Cálculo de telemetría de ventaja del rival
+    const secondsAhead = Number(Math.max(0, rivalTimeRemaining - timeRemainingSeconds).toFixed(1));
+    let rivalAdvantageReason: string | undefined;
+
+    if (winner === 'RIVAL') {
+      if (isUnanswered) {
+        rivalAdvantageReason = `No sellaste ninguna respuesta a tiempo (0s restantes). El rival aprovechó y se quedó con la ronda.`;
+      } else if (
+        secondsAhead >= 0.8 &&
+        playerScore.year_score === rivalScore.year_score &&
+        playerScore.event_score === rivalScore.event_score
+      ) {
+        rivalAdvantageReason = `¡El rival selló su veredicto ${secondsAhead} segundos antes que vos! Su multiplicador de velocidad (${rivalScore.time_bonus_multiplier}x vs ${playerScore.time_bonus_multiplier}x) definió la ronda.`;
+      } else if (secondsAhead >= 0.8) {
+        rivalAdvantageReason = `El rival selló ${secondsAhead}s antes (${rivalScore.time_bonus_multiplier}x de velocidad) y obtuvo mayor precisión global.`;
+      } else if ((rivalScore.year_diff ?? 99) < (playerScore.year_diff ?? 99)) {
+        rivalAdvantageReason = `El rival estuvo más cerca del año exacto (${rivalScore.year_score} pts vs tus ${playerScore.year_score} pts).`;
+      } else if (rivalScore.event_score > playerScore.event_score) {
+        rivalAdvantageReason = `El rival identificó correctamente el acontecimiento histórico (+${rivalScore.event_score} pts).`;
+      } else {
+        rivalAdvantageReason = `El rival sumó ${rivalScore.total_score.toLocaleString()} pts vs tus ${playerScore.total_score.toLocaleString()} pts.`;
+      }
+    }
+
     const result: RoundResult = {
       round_number: roundNumber,
       player_score: playerScore,
@@ -458,17 +493,43 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       rival_hypothesis: rivalHypothesisData.hypothesis,
       player_clues_used: revealedClueIds,
       rival_clues_used: rivalHypothesisData.cluesUsed,
+      rival_lock_seconds_ahead: secondsAhead,
+      rival_advantage_reason: rivalAdvantageReason,
     };
 
     const updatedHistory = [...roundHistory, result];
-
     const newMatchesPlayed = playerStats.matches_played + 1;
     const newMatchesWon = playerStats.matches_won + (winner === 'PLAYER' ? 1 : 0);
+
+    // Si el jugador no respondió 3 veces consecutivas -> Forfeit / Derrota por inactividad
+    if (newUnansweredCount >= 3) {
+      const forfeitSummary: MatchSummary = {
+        player_total_score: updatedHistory.reduce((acc, r) => acc + r.player_score.total_score, 0),
+        rival_total_score: updatedHistory.reduce((acc, r) => acc + r.rival_score.total_score, 0) + 5000,
+        player_rounds_won: updatedHistory.filter((r) => r.winner === 'PLAYER').length,
+        rival_rounds_won: updatedHistory.filter((r) => r.winner === 'RIVAL').length,
+        winner: 'RIVAL',
+        rival: rival,
+        round_history: updatedHistory,
+        completed_at: new Date().toISOString(),
+        forfeited_due_to_inactivity: true,
+      };
+
+      set({
+        phase: 'MATCH_OVER',
+        matchSummary: forfeitSummary,
+        roundResult: result,
+        roundHistory: updatedHistory,
+        unansweredCount: newUnansweredCount,
+      });
+      return;
+    }
 
     set({
       phase: 'POST_ROUND_ARCHIVE',
       roundResult: result,
       roundHistory: updatedHistory,
+      unansweredCount: newUnansweredCount,
       playerStats: {
         matches_played: newMatchesPlayed,
         matches_won: newMatchesWon,
@@ -520,6 +581,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       roundNumber: 1,
       roundHistory: [],
       matchSummary: null,
+      unansweredCount: 0,
       lifelinesRemaining: 2,
       eliminatedEventOptions: [],
       decadeFilter: null,

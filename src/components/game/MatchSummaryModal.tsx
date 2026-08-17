@@ -9,6 +9,7 @@ import {
   Medal,
   CheckCircle2,
   GraduationCap,
+  AlertTriangle,
 } from 'lucide-react';
 import { soundFx } from '@/lib/sound';
 
@@ -33,6 +34,7 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
   const isTie = matchSummary.winner === 'TIE';
   const isBlitz = difficultyMode === 'BLITZ';
   const lostBadly = !isPlayerWinner && !isTie && matchSummary.player_rounds_won <= 1;
+  const wasForfeited = !!matchSummary.forfeited_due_to_inactivity;
 
   const handleSaveScore = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,15 +83,26 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
             FIN DEL DUELO HISTÓRICO (5 RONDAS)
           </span>
           <h1 className="text-3xl sm:text-4xl font-serif font-black text-zinc-100">
-            {isPlayerWinner
+            {wasForfeited
+              ? 'PARTIDA PERDIDA POR INACTIVIDAD'
+              : isPlayerWinner
               ? '¡VICTORIA TOTAL EN EL ARCHIVO!'
               : isTie
               ? 'EMPATE TÁCTICO ABSOLUTO'
               : 'VICTORIA DEL RIVAL'}
           </h1>
           <p className="text-sm font-sans text-zinc-400 max-w-md mx-auto">
-            Duelo completado frente a <strong>{matchSummary.rival.name}</strong> ({matchSummary.rival.archetype}).
+            {wasForfeited
+              ? `No respondiste en 3 rondas consecutivas. La victoria fue otorgada automáticamente a ${matchSummary.rival.name}.`
+              : `Duelo completado frente a ${matchSummary.rival.name} (${matchSummary.rival.archetype}).`}
           </p>
+
+          {wasForfeited && (
+            <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-1.5 rounded-full font-mono text-xs mt-2 self-center">
+              <AlertTriangle className="w-4 h-4 text-red-400" />
+              <span>3 STRIKES POR INACTIVIDAD — VEREDICTO DESTITUIDO</span>
+            </div>
+          )}
         </div>
 
         {/* Marcador Acumulado Final */}
@@ -140,10 +153,10 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
         </div>
       )}
 
-      {/* Historial de las 5 Rondas */}
+      {/* Historial de las Rondas */}
       <div className="bg-[#0f1218] border border-zinc-800 rounded-2xl p-5 flex flex-col gap-3 shadow-xl">
         <span className="font-mono text-xs text-zinc-400 uppercase tracking-widest font-bold">
-          DESGLOSE DE LAS 5 RONDAS JUGADAS:
+          DESGLOSE DE LAS RONDAS JUGADAS:
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           {matchSummary.round_history.map((r, idx) => {

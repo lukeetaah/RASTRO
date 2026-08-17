@@ -151,5 +151,6 @@ export function calculateScore(
     total_score: totalScore,
     year_diff: yearDiff,
     geo_distance_km: geoDistanceKm !== undefined ? Math.round(geoDistanceKm) : undefined,
+    time_remaining_seconds: timeRemainingSeconds,
   };
 }

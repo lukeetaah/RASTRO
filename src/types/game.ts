@@ -58,6 +58,7 @@ export interface ScoreBreakdown {
   total_score: number;
   year_diff?: number;
   geo_distance_km?: number;
+  time_remaining_seconds?: number;
 }
 
 export interface RoundResult {
@@ -70,6 +71,8 @@ export interface RoundResult {
   rival_hypothesis: PlayerHypothesis;
   player_clues_used: string[];
   rival_clues_used: string[];
+  rival_lock_seconds_ahead?: number; // Cuántos segundos antes selló el rival
+  rival_advantage_reason?: string;   // Explicación de por qué ganó el rival
 }
 
 export interface MatchSummary {
@@ -81,6 +84,7 @@ export interface MatchSummary {
   rival: RivalState;
   round_history: RoundResult[];
   completed_at: string;
+  forfeited_due_to_inactivity?: boolean;
 }
 
 export interface LeaderboardEntry {
