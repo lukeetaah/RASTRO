@@ -20,12 +20,14 @@ import { VisualClue } from '@/types/evidence';
 
 interface PostRoundArchiveProps {
   result: RoundResult;
+  winStreak?: number;
   onPlayAgain: () => void;
   onBackToMenu: () => void;
 }
 
 export const PostRoundArchive: React.FC<PostRoundArchiveProps> = ({
   result,
+  winStreak = 0,
   onPlayAgain,
   onBackToMenu,
 }) => {
@@ -64,13 +66,20 @@ export const PostRoundArchive: React.FC<PostRoundArchiveProps> = ({
             )}
           </div>
           <div className="flex flex-col">
-            <span className="font-mono text-xs uppercase tracking-widest text-zinc-400">
-              {isPlayerWinner
-                ? 'VICTORIA POR DEDUCCIÓN'
-                : isTie
-                ? 'EMPATE TÁCTICO'
-                : 'VICTORIA DEL RIVAL'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs uppercase tracking-widest text-zinc-400">
+                {isPlayerWinner
+                  ? 'VICTORIA POR DEDUCCIÓN'
+                  : isTie
+                  ? 'EMPATE TÁCTICO'
+                  : 'VICTORIA DEL RIVAL'}
+              </span>
+              {isPlayerWinner && winStreak >= 2 && (
+                <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-300 text-[10px] font-mono font-bold">
+                  🔥 RACHA: {winStreak} SEGUIDAS
+                </span>
+              )}
+            </div>
             <h2 className="text-2xl font-serif font-bold text-zinc-100">
               {evidence.canonical_event} ({evidence.canonical_date.year})
             </h2>
