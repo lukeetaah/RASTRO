@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { RivalState } from '@/types/game';
-import { ShieldCheck, UserCheck, Radio, AlertCircle } from 'lucide-react';
+import { Bot, Radio, AlertCircle } from 'lucide-react';
 
 interface RivalStatusProps {
   rival: RivalState | null;
@@ -22,12 +22,13 @@ export const RivalStatus: React.FC<RivalStatusProps> = ({
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
         </div>
         <div className="flex flex-col">
-          <span className="text-zinc-400 text-[10px] uppercase tracking-wider">
-            Rival 1v1
+          <span className="text-zinc-400 text-[10px] uppercase tracking-wider flex items-center gap-1">
+            <Bot className="w-3 h-3 text-amber-400" />
+            Rival 1v1 (CPU Simulado)
           </span>
           <span className="font-bold text-zinc-200">{rival.name}</span>
         </div>
-        <span className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 text-zinc-300 text-[9px] rounded font-semibold">
+        <span className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 text-amber-300 text-[9px] rounded font-semibold">
           {rival.archetype}
         </span>
       </div>

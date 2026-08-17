@@ -17,6 +17,7 @@ import { calculateScore } from '@/lib/scoring';
 
 interface GameStoreState {
   phase: GamePhase;
+  gameMode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE';
   currentEvidence: CanonicalEvidence | null;
   timeRemainingSeconds: number;
   totalTimeSeconds: number;
@@ -35,6 +36,7 @@ interface GameStoreState {
   playerStats: PlayerStats;
 
   // Acciones
+  setGameMode: (mode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE') => void;
   startMatchmaking: () => void;
   startRound: (customEvidence?: CanonicalEvidence) => void;
   tickTimer: (seconds: number) => void;
@@ -48,6 +50,7 @@ interface GameStoreState {
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
   phase: 'IDLE',
+  gameMode: 'BOT_TRAINING',
   currentEvidence: null,
   timeRemainingSeconds: 90,
   totalTimeSeconds: 90,
@@ -70,6 +73,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     accuracy_rate: 0,
   },
 
+  setGameMode: (mode) => set({ gameMode: mode }),
+
   startMatchmaking: () => {
     set({ phase: 'MATCHMAKING' });
     // Emparejamiento tras 2.2 segundos para sensación auténtica de búsqueda
@@ -87,7 +92,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   startRound: (customEvidence?: CanonicalEvidence) => {
-    const evidence = customEvidence || getRandomEvidence();
+    const currentId = get().currentEvidence?.id;
+    const evidence = customEvidence || getRandomEvidence(currentId);
     const currentRival = get().rival || generateSimulatedRival();
     const lockTarget = calculateRivalLockTime(currentRival.archetype);
     const rivalData = generateRivalHypothesis(evidence, currentRival.archetype);
@@ -99,7 +105,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       totalTimeSeconds: 90,
       revealedClueIds: [],
       playerHypothesis: {
-        year: evidence.canonical_date.year - 5, // Año inicial cercano por defecto
+        year: evidence.canonical_date.year - 4, // Año sugerido inicial cercano
         location: {
           latitude: evidence.canonical_location.latitude,
           longitude: evidence.canonical_location.longitude,

@@ -5,7 +5,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-arg-1936-obelisco',
     code: 'ARG-1936-OBELISCO',
     title: 'Inauguración del Obelisco de Buenos Aires (1936)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Construccion_del_Obelisco_%28Buenos_Aires%29.jpg/1280px-Construccion_del_Obelisco_%28Buenos_Aires%29.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Construccion_del_Obelisco_%28Buenos_Aires%29.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Construccion_del_Obelisco_%28Buenos_Aires%29.jpg',
     image_aspect_ratio: 1.45,
     image_source: {
@@ -91,7 +91,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-tec-1927-solvay',
     code: 'TEC-1927-SOLVAY',
     title: 'Quinta Conferencia Solvay de Física (1927)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Solvay_conference_1927.jpg/1280px-Solvay_conference_1927.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/6/6e/Solvay_conference_1927.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/6/6e/Solvay_conference_1927.jpg',
     image_aspect_ratio: 1.55,
     image_source: {
@@ -176,7 +176,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-mun-1969-luna',
     code: 'MUN-1969-LUNA',
     title: 'Primer Alunizaje del Ser Humano (Apolo 11, 1969)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/1280px-Aldrin_Apollo_11_original.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/9/98/Aldrin_Apollo_11_original.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/9/98/Aldrin_Apollo_11_original.jpg',
     image_aspect_ratio: 1.0,
     image_source: {
@@ -261,7 +261,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-mun-1989-berlin',
     code: 'MUN-1989-BERLIN',
     title: 'Caída del Muro de Berlín (1989)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Berlinermauer.jpg/1280px-Berlinermauer.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Berlinermauer.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Berlinermauer.jpg',
     image_aspect_ratio: 1.45,
     image_source: {
@@ -345,7 +345,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-arg-1969-cordobazo',
     code: 'ARG-1969-CORDOBAZO',
     title: 'El Cordobazo (Córdoba, 1969)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Cordobazo_-_Marcha.jpg/1280px-Cordobazo_-_Marcha.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/d/d3/Cordobazo_-_Marcha.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/d/d3/Cordobazo_-_Marcha.jpg',
     image_aspect_ratio: 1.4,
     image_source: {
@@ -421,7 +421,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-lim-1973-moneda',
     code: 'LIM-1973-MONEDA',
     title: 'Bombardeo al Palacio de La Moneda (1973)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Palacio_de_la_moneda_11_septiembre_1973.jpg/1280px-Palacio_de_la_moneda_11_septiembre_1973.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Palacio_de_la_moneda_11_septiembre_1973.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Palacio_de_la_moneda_11_septiembre_1973.jpg',
     image_aspect_ratio: 1.45,
     image_source: {
@@ -497,7 +497,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-lat-1914-panama',
     code: 'LAT-1914-PANAMA',
     title: 'Apertura Oficial del Canal de Panamá (1914)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ancon_at_Miraflores_Locks_1914.jpg/1280px-Ancon_at_Miraflores_Locks_1914.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Ancon_at_Miraflores_Locks_1914.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Ancon_at_Miraflores_Locks_1914.jpg',
     image_aspect_ratio: 1.5,
     image_source: {
@@ -572,7 +572,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     id: 'ev-arg-1910-centenario',
     code: 'ARG-1910-CENTENARIO',
     title: 'Festejos del Centenario de la Revolución de Mayo (1910)',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Cabildo_de_Buenos_Aires_-_1910.jpg/1280px-Cabildo_de_Buenos_Aires_-_1910.jpg',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Cabildo_de_Buenos_Aires_-_1910.jpg',
     image_hd_url: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Cabildo_de_Buenos_Aires_-_1910.jpg',
     image_aspect_ratio: 1.45,
     image_source: {
@@ -650,7 +650,11 @@ export function getEvidenceById(id: string): CanonicalEvidence | undefined {
   return CANONICAL_EVIDENCES.find((ev) => ev.id === id);
 }
 
-export function getRandomEvidence(): CanonicalEvidence {
-  const randomIndex = Math.floor(Math.random() * CANONICAL_EVIDENCES.length);
-  return CANONICAL_EVIDENCES[randomIndex];
+export function getRandomEvidence(excludeId?: string): CanonicalEvidence {
+  const pool = excludeId
+    ? CANONICAL_EVIDENCES.filter((ev) => ev.id !== excludeId)
+    : CANONICAL_EVIDENCES;
+  const list = pool.length > 0 ? pool : CANONICAL_EVIDENCES;
+  const randomIndex = Math.floor(Math.random() * list.length);
+  return list[randomIndex];
 }

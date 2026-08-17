@@ -1,12 +1,20 @@
-// Helper para optimizar y garantizar la carga de imágenes históricas sin bloqueos de referrer
+// Helper para optimizar y garantizar la carga de imágenes históricas sin bloqueos ni fallas de doble codificación
 export function getOptimizedImageUrl(rawUrl: string, width = 1600): string {
   if (!rawUrl) return '';
 
-  // Si es Wikimedia o dominio externo, usamos el CDN de weserv con compresión WebP y bypass de referrer
-  if (rawUrl.includes('wikimedia.org') || rawUrl.includes('wikipedia.org')) {
-    const cleanUrl = rawUrl.replace(/^https?:\/\//, '');
-    return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=85&output=webp`;
-  }
+  try {
+    // Si ya es una URL con protocolo, limpiamos decodificando primero para evitar el bug de doble escape (%2528)
+    const urlWithoutProto = rawUrl.replace(/^https?:\/\//, '');
+    let cleanDecoded = urlWithoutProto;
+    try {
+      cleanDecoded = decodeURIComponent(urlWithoutProto);
+    } catch (_) {
+      cleanDecoded = urlWithoutProto;
+    }
 
-  return rawUrl;
+    // Proxy ultra-confiable wsrv.nl con compresión WebP
+    return `https://wsrv.nl/?url=${encodeURIComponent(cleanDecoded)}&w=${width}&q=85&output=webp&default=${encodeURIComponent(rawUrl)}`;
+  } catch (_) {
+    return rawUrl;
+  }
 }
