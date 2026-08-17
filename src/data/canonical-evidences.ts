@@ -62,7 +62,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
         title: 'Parque Automotor de los Años 30',
         category: 'vehicle',
         normalized_rect: { x: 0.05, y: 0.65, width: 0.38, height: 0.30 },
-        observation_text: 'Automóviles sedan Ford modelo B y vías de tranvía en la intersección de Corrientes.',
+        observation_text: 'Automóviles sedan de época y vías de tranvía en la intersección de Corrientes.',
         deduction_text: 'Los modelos de vehículos y el transporte público sitúan la escena inequívocamente a mediados de la década de 1930.',
         time_penalty_seconds: 4,
       }
@@ -954,11 +954,11 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     visual_clues: [
       {
         id: 'clue-1',
-        title: 'Las Cuatro Chimeneas y Casco Negro de la White Star Line',
+        title: 'Las Cuatro Chimeneas y Casco del Transatlántico',
         category: 'vehicle',
         normalized_rect: { x: 0.15, y: 0.20, width: 0.70, height: 0.55 },
         observation_text: 'El monumental transatlántico británico de 269 metros navegando en aguas abiertas.',
-        deduction_text: 'El buque de vapor más grande del mundo en su trágico viaje inaugural de abril de 1912.',
+        deduction_text: 'El buque de vapor más grande de su época en su trágico viaje inaugural de abril de 1912.',
         time_penalty_seconds: 5,
       }
     ],
@@ -1257,7 +1257,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
         category: 'architecture',
         normalized_rect: { x: 0.20, y: 0.15, width: 0.60, height: 0.55 },
         observation_text: 'Densa columna de humo saliendo del frontispicio neoclásico del palacio presidencial chileno.',
-        deduction_text: 'El Palacio de La Moneda bombardeado por aviones Hawker Hunter el 11 de septiembre de 1973.',
+        deduction_text: 'El Palacio de La Moneda bombardeado por aviones de combate el 11 de septiembre de 1973.',
         time_penalty_seconds: 5,
       }
     ],
@@ -1401,7 +1401,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
     visual_clues: [
       {
         id: 'clue-1',
-        title: 'Archiduque Francisco Fernando y Sofía en el Automóvil Gräf & Stift',
+        title: 'Archiduque Francisco Fernando y Sofía en el Automóvil Descapotable',
         category: 'personage',
         normalized_rect: { x: 0.25, y: 0.25, width: 0.50, height: 0.50 },
         observation_text: 'El heredero al trono austrohúngaro en el coche descapotable minutos antes del atentado.',
@@ -1423,7 +1423,7 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Clark, Christopher. The Sleepwalkers (2012).'
     ],
     historical_context_brief: 'El 28 de junio de 1914 fue asesinado en Sarajevo el archiduque Francisco Fernando.',
-    deduction_pathway: 'El archiduque en el auto Gräf & Stift en Sarajevo identifica el detonante de la Gran Guerra en 1914.',
+    deduction_pathway: 'El archiduque en el automóvil imperial en Sarajevo identifica el detonante de la Gran Guerra en 1914.',
     verified_at: '2026-08-17T00:00:00Z',
   }
 ];
