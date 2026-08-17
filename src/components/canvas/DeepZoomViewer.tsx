@@ -2,8 +2,9 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { VisualClue } from '@/types/evidence';
-import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Sparkles, Focus, HelpCircle } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Sparkles, Focus, Loader2, AlertCircle } from 'lucide-react';
 import { soundFx } from '@/lib/sound';
+import { getOptimizedImageUrl } from '@/lib/image-url';
 
 interface DeepZoomViewerProps {
   imageUrl: string;
@@ -27,7 +28,18 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isImageLoaded, setIsImageLoaded] = useState<boolean>(false);
+  const [hasImageError, setHasImageError] = useState<boolean>(false);
   const [hoveredClueId, setHoveredClueId] = useState<string | null>(null);
+
+  const optimizedSrc = getOptimizedImageUrl(imageUrl);
+
+  // Reiniciar estado de carga al cambiar imagen
+  useEffect(() => {
+    setIsImageLoaded(false);
+    setHasImageError(false);
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, [imageUrl]);
 
   // Reiniciar zoom
   const resetZoom = useCallback(() => {
@@ -96,7 +108,7 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full min-h-[460px] bg-[#07090c] rounded-xl overflow-hidden border border-zinc-800/80 shadow-2xl flex items-center justify-center select-none"
+      className="relative w-full h-full min-h-[480px] bg-[#07090c] rounded-xl overflow-hidden border border-zinc-800/80 shadow-2xl flex items-center justify-center select-none"
     >
       {/* Controles de Lupa Flotantes */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-700/60 shadow-xl text-zinc-300">
@@ -135,8 +147,37 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
         </span>
       </div>
 
+      {/* Spinner de Carga de Imagen */}
+      {!isImageLoaded && !hasImageError && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#07090c]">
+          <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+          <span className="font-mono text-xs text-zinc-400 tracking-wider uppercase">
+            Cargando evidencia de archivo en alta resolución...
+          </span>
+        </div>
+      )}
+
+      {/* Error de Carga con Fallback */}
+      {hasImageError && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#07090c] p-6 text-center">
+          <AlertCircle className="w-8 h-8 text-red-400" />
+          <span className="font-mono text-xs text-red-300">
+            No se pudo recuperar la fotografía del servidor de archivo.
+          </span>
+          <button
+            onClick={() => {
+              setHasImageError(false);
+              setIsImageLoaded(false);
+            }}
+            className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded font-mono text-xs"
+          >
+            Reintentar Carga
+          </button>
+        </div>
+      )}
+
       {/* Barra Inferior de Pistas Disponibles */}
-      <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 bg-zinc-950/85 backdrop-blur-md px-4 py-2 rounded-lg border border-zinc-800 shadow-xl">
+      <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 bg-zinc-950/90 backdrop-blur-md px-4 py-2.5 rounded-lg border border-zinc-800 shadow-xl">
         <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
           <Focus className="w-4 h-4 text-amber-400 animate-pulse" />
           <span>ZONAS DE INVESTIGACIÓN:</span>
@@ -151,10 +192,10 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
                 onClick={() => focusOnClue(clue)}
                 onMouseEnter={() => setHoveredClueId(clue.id)}
                 onMouseLeave={() => setHoveredClueId(null)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all ${
                   isRevealed
-                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/50'
-                    : 'bg-zinc-900 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-200 border border-zinc-700 hover:border-amber-500/50'
+                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/60 shadow'
+                    : 'bg-zinc-900 hover:bg-amber-500/20 text-zinc-200 hover:text-amber-200 border border-zinc-700 hover:border-amber-500/60 shadow-sm'
                 }`}
               >
                 <span className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold">
@@ -162,7 +203,7 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
                 </span>
                 <span className="font-semibold">{clue.title}</span>
                 {!isRevealed && (
-                  <span className="text-[10px] text-amber-400/90 font-bold">
+                  <span className="text-[10px] text-amber-400 font-bold ml-0.5">
                     (-{clue.time_penalty_seconds}s)
                   </span>
                 )}
@@ -191,9 +232,24 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
           {/* Imagen de Evidencia Histórica Real */}
           <img
             ref={imageRef}
-            src={imageUrl}
+            src={optimizedSrc}
             alt="Evidencia Histórica Real"
-            onLoad={() => setIsImageLoaded(true)}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onLoad={() => {
+              setIsImageLoaded(true);
+              setHasImageError(false);
+            }}
+            onError={() => {
+              if (optimizedSrc !== imageUrl) {
+                // Fallback a URL directa si el CDN falló
+                if (imageRef.current) {
+                  imageRef.current.src = imageUrl;
+                }
+              } else {
+                setHasImageError(true);
+              }
+            }}
             draggable={false}
             className={`max-h-[62vh] max-w-[85vw] object-contain rounded-md shadow-2xl transition-opacity duration-300 select-none ${
               isImageLoaded ? 'opacity-100' : 'opacity-0'

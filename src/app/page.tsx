@@ -20,8 +20,9 @@ import {
   Sparkles,
   ArrowRight,
   Flame,
+  Target,
+  HelpCircle,
 } from 'lucide-react';
-
 import { soundFx } from '@/lib/sound';
 
 export default function RastroApp() {
@@ -73,7 +74,7 @@ export default function RastroApp() {
     <div className="min-h-screen flex flex-col bg-[#090b0e] text-zinc-100">
       <Navbar currentView={currentView} onSwitchView={setCurrentView} />
 
-      <main className="flex-1 flex flex-col max-w-6xl w-full mx-auto p-4 sm:p-6">
+      <main className="flex-1 flex flex-col max-w-6xl w-full mx-auto p-3 sm:p-6">
         {currentView === 'STUDIO' ? (
           <BackofficeStudio onBackToGame={() => setCurrentView('GAME')} />
         ) : (
@@ -99,7 +100,10 @@ export default function RastroApp() {
 
                 {/* Botón Principal de Matchmaking */}
                 <button
-                  onClick={startMatchmaking}
+                  onClick={() => {
+                    soundFx.playClick();
+                    startMatchmaking();
+                  }}
                   className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-xl font-mono text-sm font-black tracking-wider shadow-2xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all"
                 >
                   <Swords className="w-5 h-5" />
@@ -177,9 +181,26 @@ export default function RastroApp() {
             {/* 4. RONDA ACTIVA (INVESTIGACIÓN Y DEEP ZOOM) */}
             {(phase === 'INVESTIGATING' || phase === 'ROUND_START' || phase === 'SUBMITTING') &&
               currentEvidence && (
-                <div className="flex-1 flex flex-col gap-4 animate-in fade-in duration-300">
+                <div className="flex-1 flex flex-col gap-3 animate-in fade-in duration-300">
+                  {/* Banner de Misión Clara */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border border-amber-500/30 rounded-lg px-4 py-2 text-xs font-mono">
+                    <div className="flex items-center gap-2 text-amber-300 font-bold">
+                      <Target className="w-4 h-4 text-amber-400" />
+                      <span>OBJETIVO: IDENTIFICÁ EL ACONTECIMIENTO Y EL AÑO</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-400 text-[11px]">
+                      <span>1. Mirá la foto</span>
+                      <span>•</span>
+                      <span>2. Ajustá el Año</span>
+                      <span>•</span>
+                      <span>3. Elegí Acontecimiento</span>
+                      <span>•</span>
+                      <span className="text-amber-400 font-bold">4. Sellar Veredicto</span>
+                    </div>
+                  </div>
+
                   {/* Barra Superior de Estado y Tensión */}
-                  <div className="grid grid-cols-12 gap-4 items-center bg-[#0e1117] border border-zinc-800 rounded-xl p-3 shadow-lg">
+                  <div className="grid grid-cols-12 gap-3 items-center bg-[#0e1117] border border-zinc-800 rounded-xl p-3 shadow-lg">
                     {/* Rival 1v1 */}
                     <div className="col-span-8 md:col-span-9">
                       <RivalStatus rival={rival} timeRemaining={timeRemainingSeconds} />
@@ -195,7 +216,7 @@ export default function RastroApp() {
                   </div>
 
                   {/* Lienzo Principal de Evidencia (Deep Zoom & Pistas) */}
-                  <div className="w-full h-[50vh] min-h-[380px]">
+                  <div className="w-full h-[48vh] min-h-[380px]">
                     <DeepZoomViewer
                       imageUrl={currentEvidence.image_url}
                       clues={currentEvidence.visual_clues}
@@ -240,8 +261,14 @@ export default function RastroApp() {
             {phase === 'POST_ROUND_ARCHIVE' && roundResult && (
               <PostRoundArchive
                 result={roundResult}
-                onPlayAgain={() => startRound()}
-                onBackToMenu={resetToLobby}
+                onPlayAgain={() => {
+                  soundFx.playClick();
+                  startRound();
+                }}
+                onBackToMenu={() => {
+                  soundFx.playClick();
+                  resetToLobby();
+                }}
               />
             )}
           </>
