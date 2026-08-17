@@ -59,7 +59,7 @@ export function validateEvidenceCompleteness(
   }
 
   // 5. Integridad de Imagen y URL
-  if (ev.image_url.startsWith('http') && ev.image_aspect_ratio > 0) {
+  if ((ev.image_url.startsWith('/') || ev.image_url.startsWith('http')) && ev.image_aspect_ratio > 0) {
     passed.push('4_INTEGRIDAD_IMAGEN');
   } else {
     failed.push('4_INTEGRIDAD_IMAGEN_FALLIDA');
