@@ -7,7 +7,7 @@ import {
   RivalState,
   RoundResult
 } from '@/types/game';
-import { getRandomEvidence } from '@/data/canonical-evidences';
+import { CANONICAL_EVIDENCES, getEvidenceById } from '@/data/canonical-evidences';
 import {
   calculateRivalLockTime,
   generateRivalHypothesis,
@@ -19,6 +19,7 @@ interface GameStoreState {
   phase: GamePhase;
   gameMode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE';
   currentEvidence: CanonicalEvidence | null;
+  unplayedDeck: string[]; // Baraja de IDs sin repetir
   timeRemainingSeconds: number;
   totalTimeSeconds: number;
   revealedClueIds: string[];
@@ -48,10 +49,21 @@ interface GameStoreState {
   resetToLobby: () => void;
 }
 
+// Función para barajar un array aleatoriamente (Fisher-Yates)
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export const useGameStore = create<GameStoreState>((set, get) => ({
   phase: 'IDLE',
   gameMode: 'BOT_TRAINING',
   currentEvidence: null,
+  unplayedDeck: [],
   timeRemainingSeconds: 90,
   totalTimeSeconds: 90,
   revealedClueIds: [],
@@ -77,7 +89,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
   startMatchmaking: () => {
     set({ phase: 'MATCHMAKING' });
-    // Emparejamiento tras 2.2 segundos para sensación auténtica de búsqueda
     setTimeout(() => {
       const simulatedRival = generateSimulatedRival();
       set({
@@ -87,13 +98,28 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
       setTimeout(() => {
         get().startRound();
-      }, 1800);
-    }, 2200);
+      }, 1600);
+    }, 1800);
   },
 
   startRound: (customEvidence?: CanonicalEvidence) => {
-    const currentId = get().currentEvidence?.id;
-    const evidence = customEvidence || getRandomEvidence(currentId);
+    let evidence: CanonicalEvidence;
+
+    if (customEvidence) {
+      evidence = customEvidence;
+    } else {
+      let currentDeck = get().unplayedDeck;
+      // Si la baraja está vacía o se agotó, rebarajamos todas las 12 evidencias maestras
+      if (!currentDeck || currentDeck.length === 0) {
+        currentDeck = shuffleArray(CANONICAL_EVIDENCES.map((e) => e.id));
+      }
+
+      const nextId = currentDeck[0];
+      const remainingDeck = currentDeck.slice(1);
+      evidence = getEvidenceById(nextId) || CANONICAL_EVIDENCES[0];
+      set({ unplayedDeck: remainingDeck });
+    }
+
     const currentRival = get().rival || generateSimulatedRival();
     const lockTarget = calculateRivalLockTime(currentRival.archetype);
     const rivalData = generateRivalHypothesis(evidence, currentRival.archetype);
@@ -105,11 +131,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       totalTimeSeconds: 90,
       revealedClueIds: [],
       playerHypothesis: {
-        year: evidence.canonical_date.year - 4, // Año sugerido inicial cercano
+        year: evidence.canonical_date.year,
         location: {
           latitude: evidence.canonical_location.latitude,
           longitude: evidence.canonical_location.longitude,
-          city: '',
+          city: evidence.canonical_location.city,
         },
         event_query: '',
       },
@@ -124,12 +150,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       roundResult: null,
     });
 
-    // Transición fluida a INVESTIGATING
     setTimeout(() => {
       if (get().phase === 'ROUND_START') {
         set({ phase: 'INVESTIGATING' });
       }
-    }, 1200);
+    }, 1000);
   },
 
   tickTimer: (seconds: number) => {
@@ -138,7 +163,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     const newTime = Math.max(0, timeRemainingSeconds - seconds);
 
-    // Actualizar estado del rival
     let updatedRival = rival;
     if (rival && rivalLockTargetTime !== null && !rival.has_locked) {
       if (newTime <= rivalLockTargetTime) {
@@ -198,7 +222,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     set({ phase: 'ROUND_RESOLVING' });
     setTimeout(() => {
       get().resolveRound();
-    }, 1500);
+    }, 1400);
   },
 
   resolveRound: () => {
