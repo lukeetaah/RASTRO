@@ -22,21 +22,54 @@ import { soundFx } from '@/lib/sound';
 const BLITZ_ROUND_DURATIONS = [20, 18, 15, 12, 10];
 const PRACTICE_ROUND_DURATIONS = [35, 35, 35, 35, 35];
 
+const LOCAL_STORAGE_PLAYER_NAME = 'rastro_nickname_v1';
+const LOCAL_STORAGE_PLAYER_ID = 'rastro_player_id_v1';
+
+function getInitialPlayerId(): string {
+  if (typeof window === 'undefined') return 'p-server';
+  try {
+    let id = localStorage.getItem(LOCAL_STORAGE_PLAYER_ID);
+    if (!id) {
+      id = `usr-${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem(LOCAL_STORAGE_PLAYER_ID, id);
+    }
+    return id;
+  } catch {
+    return `usr-${Math.random().toString(36).substring(2, 9)}`;
+  }
+}
+
+function getInitialPlayerName(): string {
+  if (typeof window === 'undefined') return 'Investigador_1910';
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_PLAYER_NAME);
+    if (saved && saved.trim()) return saved.trim();
+    const defaultName = `Investigador_${Math.floor(Math.random() * 899 + 100)}`;
+    localStorage.setItem(LOCAL_STORAGE_PLAYER_NAME, defaultName);
+    return defaultName;
+  } catch {
+    return 'Investigador_1910';
+  }
+}
+
 interface GameStoreState {
   phase: GamePhase;
   gameMode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE';
   difficultyMode: 'BLITZ' | 'PRACTICE';
+  playerId: string;
+  playerName: string;
+  onlineCount: number;
   currentEvidence: CanonicalEvidence | null;
-  unplayedDeck: string[]; // Baraja de IDs sin repetir
+  unplayedDeck: string[];
 
   // Ronda y Partida (Match de 5 rondas)
-  roundNumber: number; // 1 a 5
-  maxRounds: number; // 5
+  roundNumber: number;
+  maxRounds: number;
   roundHistory: RoundResult[];
   matchSummary: MatchSummary | null;
-  unansweredCount: number; // Contador de rondas sin responder (3 = forfeit)
+  unansweredCount: number;
 
-  // Ayudas de Archivo (2 por sesión de match)
+  // Ayudas de Archivo
   lifelinesRemaining: number;
   eliminatedEventOptions: string[];
   decadeFilter: { min: number; max: number } | null;
@@ -45,7 +78,7 @@ interface GameStoreState {
   timeRemainingSeconds: number;
   totalTimeSeconds: number;
 
-  // Pistas
+  // Pistas e inspección
   revealedClueIds: string[];
   playerHypothesis: PlayerHypothesis;
   isInspectingImage: boolean;
@@ -62,8 +95,10 @@ interface GameStoreState {
   leaderboard: LeaderboardEntry[];
 
   // Acciones
+  setPlayerName: (name: string) => void;
   setGameMode: (mode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE') => void;
   setDifficultyMode: (mode: 'BLITZ' | 'PRACTICE') => void;
+  fetchOnlineCount: () => Promise<void>;
   startMatchmaking: () => void;
   startRound: (customEvidence?: CanonicalEvidence) => void;
   nextRoundOrFinishMatch: () => void;
@@ -82,10 +117,9 @@ interface GameStoreState {
 
   // Leaderboard Universal
   fetchLeaderboard: () => Promise<void>;
-  saveLeaderboardRecord: (playerName: string) => Promise<void>;
+  saveLeaderboardRecord: () => Promise<void>;
 }
 
-// Función para barajar un array aleatoriamente (Fisher-Yates)
 function shuffleArray<T>(array: T[]): T[] {
   const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -96,17 +130,20 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 const DEFAULT_SEED_LEADERBOARD: LeaderboardEntry[] = [
-  { id: 'l-1', player_name: 'Archivista_Mayor', total_score: 26850, rounds_won: 5, rival_name: 'V. H. Hobsbawm', date: '17/8/2026' },
-  { id: 'l-2', player_name: 'Cronista_Austral', total_score: 24920, rounds_won: 5, rival_name: 'Archivista_AGN', date: '17/8/2026' },
-  { id: 'l-3', player_name: 'SanMartin_1817', total_score: 23150, rounds_won: 4, rival_name: 'M. Bloch_1929', date: '16/8/2026' },
-  { id: 'l-4', player_name: 'Curie_Solvay', total_score: 21400, rounds_won: 4, rival_name: 'S. Zweig', date: '16/8/2026' },
-  { id: 'l-5', player_name: 'Dra_Prebisch', total_score: 19850, rounds_won: 4, rival_name: 'F. Halder', date: '15/8/2026' },
+  { id: 'l-1', player_name: 'Archivista_Mayor', total_score: 26850, rounds_won: 5, rival_name: 'V. H. Hobsbawm', date: '17/8/2026, 18:40 hs' },
+  { id: 'l-2', player_name: 'Cronista_Austral', total_score: 24920, rounds_won: 5, rival_name: 'Archivista_AGN', date: '17/8/2026, 19:15 hs' },
+  { id: 'l-3', player_name: 'SanMartin_1817', total_score: 23150, rounds_won: 4, rival_name: 'M. Bloch_1929', date: '16/8/2026, 21:05 hs' },
+  { id: 'l-4', player_name: 'Curie_Solvay', total_score: 21400, rounds_won: 4, rival_name: 'S. Zweig', date: '16/8/2026, 22:30 hs' },
+  { id: 'l-5', player_name: 'Dra_Prebisch', total_score: 19850, rounds_won: 4, rival_name: 'F. Halder', date: '15/8/2026, 17:10 hs' },
 ];
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
   phase: 'IDLE',
   gameMode: 'BOT_TRAINING',
   difficultyMode: 'BLITZ',
+  playerId: getInitialPlayerId(),
+  playerName: getInitialPlayerName(),
+  onlineCount: 14,
   currentEvidence: null,
   unplayedDeck: [],
 
@@ -142,12 +179,33 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
   leaderboard: DEFAULT_SEED_LEADERBOARD,
 
+  setPlayerName: (name: string) => {
+    const trimmed = name.trim().slice(0, 24) || 'Investigador';
+    try {
+      localStorage.setItem(LOCAL_STORAGE_PLAYER_NAME, trimmed);
+    } catch {}
+    set({ playerName: trimmed });
+  },
+
   setGameMode: (mode) => set({ gameMode: mode }),
   setDifficultyMode: (mode) => set({ difficultyMode: mode }),
 
+  fetchOnlineCount: async () => {
+    try {
+      const res = await fetch('/api/matchmaking');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.active_online_count) {
+          set({ onlineCount: data.active_online_count });
+        }
+      }
+    } catch {}
+  },
+
   startMatchmaking: () => {
     soundFx.unlockAudio();
-    const { difficultyMode } = get();
+    const { playerId, playerName, difficultyMode } = get();
+
     set({
       phase: 'MATCHMAKING',
       roundNumber: 1,
@@ -157,17 +215,54 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       unansweredCount: 0,
     });
 
-    setTimeout(() => {
-      const simulatedRival = generateSimulatedRival(difficultyMode === 'PRACTICE');
-      set({
-        phase: 'MATCH_FOUND',
-        rival: simulatedRival,
-      });
+    let attempts = 0;
+    const maxAttempts = 3;
 
-      setTimeout(() => {
-        get().startRound();
-      }, 1500);
-    }, 1600);
+    const pollMatch = async () => {
+      attempts++;
+      try {
+        const res = await fetch('/api/matchmaking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            player_id: playerId,
+            player_name: playerName,
+            action: 'JOIN',
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // Si encontramos a otro jugador real en la cola
+          if (data.matched && data.rival) {
+            set({
+              phase: 'MATCH_FOUND',
+              rival: data.rival,
+            });
+            setTimeout(() => {
+              get().startRound();
+            }, 1500);
+            return;
+          }
+        }
+      } catch {}
+
+      if (attempts < maxAttempts && get().phase === 'MATCHMAKING') {
+        setTimeout(pollMatch, 900);
+      } else if (get().phase === 'MATCHMAKING') {
+        // Fallback suave a rival simulado de CPU
+        const cpuRival = generateSimulatedRival(difficultyMode === 'PRACTICE');
+        set({
+          phase: 'MATCH_FOUND',
+          rival: cpuRival,
+        });
+        setTimeout(() => {
+          get().startRound();
+        }, 1500);
+      }
+    };
+
+    setTimeout(pollMatch, 700);
   },
 
   startRound: (customEvidence?: CanonicalEvidence) => {
@@ -189,7 +284,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       set({ unplayedDeck: remainingDeck });
     }
 
-    // Duración decreciente (Blitz: 20, 18, 15, 12, 10s | Práctica: 35s)
     const durations = difficultyMode === 'PRACTICE' ? PRACTICE_ROUND_DURATIONS : BLITZ_ROUND_DURATIONS;
     const roundIndex = Math.min(roundNumber - 1, durations.length - 1);
     const roundDuration = durations[roundIndex];
@@ -327,7 +421,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     const newTime = Math.max(0, timeRemainingSeconds - seconds);
 
-    // Audio de latidos del corazón (lub-dub) acelerando
     const ratio = newTime / totalTimeSeconds;
     if (newTime > 0) {
       if (ratio <= 0.3) {
@@ -448,7 +541,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       winner = 'RIVAL';
     }
 
-    // Telemetría de ventaja del rival
     const secondsAhead = Number(Math.max(0, rivalTimeRemaining - timeRemainingSeconds).toFixed(1));
     let rivalAdvantageReason: string | undefined;
 
@@ -490,7 +582,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     const newMatchesPlayed = playerStats.matches_played + 1;
     const newMatchesWon = playerStats.matches_won + (winner === 'PLAYER' ? 1 : 0);
 
-    // Si el jugador no respondió 3 veces consecutivas -> Forfeit
     if (newUnansweredCount >= 3) {
       const forfeitSummary: MatchSummary = {
         player_total_score: updatedHistory.reduce((acc, r) => acc + r.player_score.total_score, 0),
@@ -554,16 +645,24 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     } catch {}
   },
 
-  saveLeaderboardRecord: async (playerName: string) => {
-    const { matchSummary, leaderboard } = get();
+  saveLeaderboardRecord: async () => {
+    const { matchSummary, playerName, leaderboard } = get();
     if (!matchSummary) return;
 
+    const formattedDate = new Intl.DateTimeFormat('es-AR', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date()) + ' hs';
+
     const payload = {
-      player_name: playerName.trim() || 'Investigador Anónimo',
+      player_name: playerName || 'Investigador',
       total_score: matchSummary.player_total_score,
       rounds_won: matchSummary.player_rounds_won,
       rival_name: matchSummary.rival.name,
-      date: new Date().toLocaleDateString('es-AR'),
+      date: formattedDate,
     };
 
     try {
@@ -581,7 +680,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       }
     } catch {}
 
-    // Fallback local
     const fallbackEntry: LeaderboardEntry = {
       id: `lead-${Date.now()}`,
       ...payload,

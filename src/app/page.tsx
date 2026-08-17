@@ -23,6 +23,9 @@ import {
   Clock,
   Trophy,
   GraduationCap,
+  User,
+  Users,
+  PenLine,
 } from 'lucide-react';
 import { soundFx } from '@/lib/sound';
 
@@ -38,6 +41,8 @@ export default function RastroApp() {
     roundNumber,
     maxRounds,
     difficultyMode,
+    playerName,
+    onlineCount,
     currentEvidence,
     timeRemainingSeconds,
     totalTimeSeconds,
@@ -47,7 +52,9 @@ export default function RastroApp() {
     rival,
     roundResult,
     playerStats,
+    setPlayerName,
     setDifficultyMode,
+    fetchOnlineCount,
     startMatchmaking,
     startRound,
     nextRoundOrFinishMatch,
@@ -61,10 +68,13 @@ export default function RastroApp() {
     fetchLeaderboard,
   } = useGameStore();
 
-  // Cargar tabla general universal desde la API al iniciar
+  // Cargar tabla general y conteo de jugadores activos al inicio
   useEffect(() => {
     fetchLeaderboard();
-  }, [fetchLeaderboard]);
+    fetchOnlineCount();
+    const interval = setInterval(fetchOnlineCount, 8000);
+    return () => clearInterval(interval);
+  }, [fetchLeaderboard, fetchOnlineCount]);
 
   // Sonido de urgencia cuando queda poco tiempo
   useEffect(() => {
@@ -178,12 +188,16 @@ export default function RastroApp() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-5 sm:gap-7 py-4 sm:py-8"
+                  className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-4 sm:gap-6 py-4 sm:py-6"
                 >
-                  <div className="flex flex-col items-center gap-2 sm:gap-3">
-                    <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px] sm:text-xs font-semibold tracking-widest uppercase">
-                      Motor de Investigación Histórica 1v1 · Match 5 Rondas
-                    </span>
+                  <div className="flex flex-col items-center gap-2 sm:gap-2.5">
+                    {/* Indicador de jugadores en vivo */}
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{onlineCount} investigadores en línea</span>
+                    </div>
+
                     <h1 className="text-3xl sm:text-5xl font-serif font-black tracking-tight text-zinc-100 leading-tight">
                       La historia no es una trivia.
                       <br />
@@ -194,6 +208,25 @@ export default function RastroApp() {
                     <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed max-w-lg">
                       19 evidencias fotográficas icónicas de dominio público (AGN, NASA, NARA, Europeana). Identificá el acontecimiento y superá a tu rival en un blitz rápido.
                     </p>
+                  </div>
+
+                  {/* Selector de Alias / Nickname del Jugador */}
+                  <div className="flex items-center gap-2 bg-[#121622] border border-amber-500/40 px-3.5 py-2 rounded-2xl shadow-lg w-full max-w-sm">
+                    <User className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="flex flex-col text-left flex-1 min-w-0">
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                        Tu Alias en el Archivo:
+                      </span>
+                      <input
+                        type="text"
+                        value={playerName}
+                        maxLength={22}
+                        onChange={(e) => setPlayerName(e.target.value)}
+                        placeholder="Tu Nombre o Apodo"
+                        className="bg-transparent font-mono text-xs font-bold text-amber-200 outline-none placeholder:text-zinc-600 truncate"
+                      />
+                    </div>
+                    <PenLine className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                   </div>
 
                   {/* Selector de Modo de Dificultad */}
@@ -270,12 +303,12 @@ export default function RastroApp() {
                   >
                     <Swords className="w-5 h-5" />
                     {difficultyMode === 'BLITZ'
-                      ? 'INICIAR DUELO BLITZ (5 RONDAS)'
+                      ? 'BUSCAR DUELO 1v1 (5 RONDAS)'
                       : 'INICIAR PRÁCTICA GUIADA (5 RONDAS)'}
                   </motion.button>
 
                   {/* Pilares del Juego */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-4 border-t border-zinc-800/80 text-left font-mono text-xs text-zinc-400">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-3 border-t border-zinc-800/80 text-left font-mono text-xs text-zinc-400">
                     <div className="p-3 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5" />
@@ -293,9 +326,9 @@ export default function RastroApp() {
                     <div className="p-3 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Swords className="w-3.5 h-3.5" />
-                        3. Match a 5 Rondas
+                        3. Match 1v1 en Vivo
                       </span>
-                      Sumá puntos, disputá la revancha y grabá tu récord universal.
+                      Jugá contra personas reales o bots y firmá el acta con 1 clic.
                     </div>
                   </div>
 
@@ -307,7 +340,7 @@ export default function RastroApp() {
               )}
             </AnimatePresence>
 
-            {/* 2. MATCHMAKING SCREEN */}
+            {/* 2. MATCHMAKING SCREEN (BUSCANDO RIVAL HUMANO / BOT) */}
             <AnimatePresence mode="wait">
               {phase === 'MATCHMAKING' && (
                 <motion.div
@@ -323,15 +356,16 @@ export default function RastroApp() {
                       <Radio className="w-8 h-8 text-amber-400 animate-pulse" />
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1.5 max-w-sm">
                     <h2 className="text-xl font-mono font-bold text-zinc-200">
-                      {difficultyMode === 'BLITZ'
-                        ? 'Buscando Rival en el Archivo...'
-                        : 'Preparando Sesión de Entrenamiento...'}
+                      Buscando Oponente en Línea...
                     </h2>
-                    <p className="text-xs font-mono text-zinc-500">
-                      Seleccionando 5 evidencias y sincronizando cronómetros
+                    <p className="text-xs font-mono text-zinc-400">
+                      Explorando la sala de espera para emparejarte con otro investigador disponible o asignando un rival de guardia.
                     </p>
+                    <span className="text-[11px] font-mono text-amber-400 mt-1">
+                      Jugando como: <strong>{playerName}</strong>
+                    </span>
                   </div>
                 </motion.div>
               )}
@@ -354,21 +388,29 @@ export default function RastroApp() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: 'spring', damping: 12 }}
-                        className="p-4 bg-emerald-950/80 border border-emerald-600/60 rounded-full text-emerald-400 shadow-xl"
+                        className={`p-4 rounded-full shadow-xl ${
+                          rival.is_human
+                            ? 'bg-emerald-950/80 border border-emerald-500 text-emerald-300 ring-4 ring-emerald-500/20'
+                            : 'bg-amber-950/80 border border-amber-500 text-amber-400'
+                        }`}
                       >
                         <Swords className="w-10 h-10" />
                       </motion.div>
                       <div className="flex flex-col gap-1">
-                        <span className="font-mono text-xs text-emerald-400 font-bold uppercase tracking-widest">
-                          {difficultyMode === 'BLITZ'
-                            ? '¡DUELO BLITZ EMPAREJADO (5 RONDAS)!'
-                            : '¡ENTRENAMIENTO GUIADO (5 RONDAS)!'}
+                        <span className={`font-mono text-xs font-bold uppercase tracking-widest ${
+                          rival.is_human ? 'text-emerald-400' : 'text-amber-400'
+                        }`}>
+                          {rival.is_human
+                            ? '¡JUGADOR REAL ENCONTRADO EN LA SALA!'
+                            : difficultyMode === 'BLITZ'
+                            ? '¡DUELO EMPAREJADO CON ARCHIVISTA!'
+                            : '¡ENTRENAMIENTO GUIADO!'}
                         </span>
-                        <h2 className="text-2xl font-serif font-bold text-zinc-100">
-                          Tú vs {rival.name}
+                        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-100">
+                          {playerName} vs {rival.name}
                         </h2>
                         <span className="text-xs font-mono text-zinc-400">
-                          Estilo táctico: <strong>{rival.archetype}</strong>
+                          {rival.is_human ? '🟢 Contrincante Humano Conectado' : `Estilo táctico: ${rival.archetype}`}
                         </span>
                       </div>
                     </>
@@ -402,7 +444,7 @@ export default function RastroApp() {
               )}
             </AnimatePresence>
 
-            {/* 4. RONDA ACTIVA: OPTIMIZADA PARA AJUSTARSE A 1 SOLA PANTALLA EN MÓVIL SIN SCROLL */}
+            {/* 4. RONDA ACTIVA */}
             <AnimatePresence mode="wait">
               {phase === 'INVESTIGATING' && currentEvidence && (
                 <motion.div
@@ -412,7 +454,6 @@ export default function RastroApp() {
                   transition={{ duration: 0.25 }}
                   className="flex-1 h-[calc(100dvh-4.2rem)] sm:h-auto flex flex-col justify-between overflow-hidden gap-1.5 sm:gap-3"
                 >
-                  {/* HUD Superior Compacto: Ronda + Rival + Reloj de Arena */}
                   <div
                     className={`grid grid-cols-12 gap-2 items-center bg-[#0e1117] border rounded-xl p-2 sm:p-2.5 shadow-lg transition-colors shrink-0 ${urgencyClass}`}
                   >
@@ -439,7 +480,6 @@ export default function RastroApp() {
                     </div>
                   </div>
 
-                  {/* Lienzo Principal de Evidencia (Deep Zoom & Pistas) */}
                   <div className="flex-1 min-h-[160px] max-h-[38vh] sm:max-h-[48vh] w-full rounded-xl overflow-hidden shadow-xl border border-zinc-800">
                     <DeepZoomViewer
                       imageUrl={currentEvidence.image_url}
@@ -449,7 +489,6 @@ export default function RastroApp() {
                     />
                   </div>
 
-                  {/* Formulario de Hipótesis Compacto */}
                   <HypothesisForm
                     evidence={currentEvidence}
                     hypothesis={playerHypothesis}
@@ -458,7 +497,6 @@ export default function RastroApp() {
                     timeRemaining={timeRemainingSeconds}
                   />
 
-                  {/* Modal de Pista */}
                   <ClueModal
                     clue={activeClue}
                     onClose={() => setSelectedClueModal(null)}

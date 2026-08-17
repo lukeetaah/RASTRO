@@ -17,7 +17,8 @@ export type GamePhase = z.infer<typeof GamePhaseSchema>;
 export const RivalArchetypeSchema = z.enum([
   'SNIPER',    // Responde rápido con alta intuición (~15-25s)
   'DETECTIVE', // Usa 1-2 pistas y responde preciso (~45-65s)
-  'GAMBLER'    // Se arriesga al final con precisión variable (~70-85s)
+  'GAMBLER',   // Se arriesga al final con precisión variable (~70-85s)
+  'HUMANO'     // Jugador real emparejado online
 ]);
 export type RivalArchetype = z.infer<typeof RivalArchetypeSchema>;
 
@@ -27,6 +28,7 @@ export interface RivalState {
   avatar_url?: string;
   archetype: RivalArchetype;
   is_online: boolean;
+  is_human?: boolean;
   has_locked: boolean;
   lock_timestamp_seconds?: number;
   time_remaining_seconds: number;
@@ -71,8 +73,8 @@ export interface RoundResult {
   rival_hypothesis: PlayerHypothesis;
   player_clues_used: string[];
   rival_clues_used: string[];
-  rival_lock_seconds_ahead?: number; // Cuántos segundos antes selló el rival
-  rival_advantage_reason?: string;   // Explicación de por qué ganó el rival
+  rival_lock_seconds_ahead?: number;
+  rival_advantage_reason?: string;
 }
 
 export interface MatchSummary {

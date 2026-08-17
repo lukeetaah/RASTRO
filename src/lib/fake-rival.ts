@@ -28,6 +28,7 @@ export function generateSimulatedRival(isPractice: boolean = false): RivalState 
     name,
     archetype: chosenArchetype,
     is_online: true,
+    is_human: false,
     has_locked: false,
     time_remaining_seconds: 20,
   };
@@ -54,6 +55,10 @@ export function calculateRivalLockTime(
     case 'GAMBLER':
       // Se arriesga al final (consume 75% a 90% del tiempo)
       return Math.max(1, Math.floor(totalDurationSeconds * (0.10 + Math.random() * 0.15)));
+    case 'HUMANO':
+    default:
+      // Comportamiento de jugador humano en línea
+      return Math.max(2, Math.floor(totalDurationSeconds * (0.35 + Math.random() * 0.30)));
   }
 }
 
@@ -69,25 +74,20 @@ export function generateRivalHypothesis(
   const cluesUsed: string[] = [];
 
   if (isPractice) {
-    // En modo práctica el rival falla mucho más para que el jugador pueda ganar y aprender
     yearError = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.floor(Math.random() * 12));
     if (Math.random() > 0.4) hasCorrectEvent = false;
     if (Math.random() > 0.4) hasCorrectLocation = false;
   } else if (archetype === 'SNIPER') {
-    // 40% acierto exacto en año, 60% desvío de 2 a 8 años por apresurarse
     if (Math.random() > 0.4) {
       yearError = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.floor(Math.random() * 6));
     }
-    // 30% de veces erra el evento por contestar a toda velocidad
     if (Math.random() > 0.70) {
       hasCorrectEvent = false;
     }
   } else if (archetype === 'DETECTIVE') {
-    // Pide 1 pista
     if (evidence.visual_clues.length > 0) {
       cluesUsed.push(evidence.visual_clues[0].id);
     }
-    // 50% acierto exacto, 50% desvío de 1 a 4 años
     if (Math.random() > 0.5) {
       yearError = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.floor(Math.random() * 4));
     }
@@ -95,12 +95,19 @@ export function generateRivalHypothesis(
       hasCorrectLocation = false;
     }
   } else if (archetype === 'GAMBLER') {
-    // Fuerte variabilidad
     yearError = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.floor(Math.random() * 15));
     if (Math.random() > 0.5) {
       hasCorrectLocation = false;
     }
     if (Math.random() > 0.45) {
+      hasCorrectEvent = false;
+    }
+  } else {
+    // HUMANO: distribución realista de acierto
+    if (Math.random() > 0.55) {
+      yearError = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.floor(Math.random() * 5));
+    }
+    if (Math.random() > 0.75) {
       hasCorrectEvent = false;
     }
   }
