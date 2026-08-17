@@ -10,7 +10,6 @@ import {
   Search,
   SendHorizontal,
   Check,
-  ArrowRight,
   Zap,
   Filter,
 } from 'lucide-react';
@@ -44,7 +43,6 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
   hypothesis,
   onUpdateHypothesis,
   onSubmitVerdict,
-  timeRemaining,
 }) => {
   const [activeTab, setActiveTab] = useState<'EVENT' | 'YEAR' | 'LOCATION'>('EVENT');
   const currentYear = hypothesis.year ?? evidence.canonical_date.year;
@@ -57,7 +55,6 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     useLifelineDecade,
   } = useGameStore();
 
-  // Opciones contextuales desafiantes (sin mostrar el año en el texto del chip)
   const eventOptions = evidence.distractor_events || [
     'Acontecimiento Histórico A',
     'Acontecimiento Histórico B',
@@ -81,7 +78,6 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     });
   };
 
-  // Al elegir acontecimiento, auto-configuramos los metadatos canónicos de esa hipótesis
   const handleSelectEvent = (eventName: string) => {
     soundFx.playClick();
     if (eventName.toLowerCase().trim() === evidence.canonical_event.toLowerCase().trim()) {
@@ -110,25 +106,25 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
   const maxSliderYear = decadeFilter ? decadeFilter.max : 2025;
 
   return (
-    <div className="w-full bg-[#0f1218] border border-zinc-800/90 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-2xl">
-      {/* 1. Selector de Pestañas y Ayudas de Archivo */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
-        <div className="flex flex-wrap gap-2">
+    <div className="w-full bg-[#0f1218] border border-zinc-800/90 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col gap-2 sm:gap-3 shadow-2xl shrink-0">
+      {/* 1. Selector de Pestañas y Ayudas (Ultra-compacto en mobile) */}
+      <div className="flex items-center justify-between gap-1.5 border-b border-zinc-800 pb-1.5 sm:pb-2.5">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={() => {
               soundFx.playClick();
               setActiveTab('EVENT');
             }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer ${
               activeTab === 'EVENT'
-                ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20'
+                ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
                 : 'bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-700/60'
             }`}
           >
-            <Search className="w-4 h-4" />
-            1. ACONTECIMIENTO
+            <Search className="w-3.5 h-3.5" />
+            <span>1. EVENTO</span>
             {hypothesis.event_query && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             )}
           </button>
 
@@ -137,19 +133,14 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
               soundFx.playClick();
               setActiveTab('YEAR');
             }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer ${
               activeTab === 'YEAR'
-                ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20'
+                ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
                 : 'bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-700/60'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            2. AÑO ({currentYear})
-            {decadeFilter && (
-              <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-300">
-                Década activa
-              </span>
-            )}
+            <Calendar className="w-3.5 h-3.5" />
+            <span>2. AÑO ({currentYear})</span>
           </button>
 
           <button
@@ -157,116 +148,104 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
               soundFx.playClick();
               setActiveTab('LOCATION');
             }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer ${
               activeTab === 'LOCATION'
-                ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20'
+                ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
                 : 'bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-700/60'
             }`}
           >
-            <MapPin className="w-4 h-4" />
-            3. UBICACIÓN
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">3. UBICACIÓN</span>
+            <span className="sm:hidden">3. CIUDAD</span>
             {hypothesis.location?.city && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             )}
           </button>
         </div>
 
-        {/* Barra de Ayudas de Archivo (2 por sesión de match) */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest hidden md:inline">
-            Ayudas ({lifelinesRemaining}/2):
-          </span>
+        {/* Ayudas 50:50 y Década */}
+        <div className="flex items-center gap-1">
           <button
             disabled={lifelinesRemaining <= 0 || eliminatedEventOptions.length > 0}
             onClick={useLifeline5050}
-            title="Descartar 2 opciones falsas (consume 1 ayuda)"
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+            title="50:50 (Descarta 2 falsas)"
+            className={`flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold border transition-all cursor-pointer ${
               lifelinesRemaining > 0 && eliminatedEventOptions.length === 0
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
-                : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 cursor-not-allowed'
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 cursor-not-allowed opacity-50'
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <Zap className="w-3 h-3 text-amber-400" />
             <span>50:50</span>
           </button>
 
           <button
             disabled={lifelinesRemaining <= 0 || decadeFilter !== null}
             onClick={useLifelineDecade}
-            title="Filtrar rango de década histórica (consume 1 ayuda)"
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+            title="Filtrar Década"
+            className={`flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold border transition-all cursor-pointer ${
               lifelinesRemaining > 0 && decadeFilter === null
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
-                : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 cursor-not-allowed'
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 cursor-not-allowed opacity-50'
             }`}
           >
-            <Filter className="w-3.5 h-3.5 text-amber-400" />
+            <Filter className="w-3 h-3 text-amber-400" />
             <span>Década</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Contenido de la Pestaña */}
-      <div className="min-h-[110px] flex flex-col justify-center">
-        {/* Pestaña ACONTECIMIENTO (Desafiante y Contextual) */}
+      {/* 2. Contenido Activo (Reducido y ajustado para 1 sola pantalla) */}
+      <div className="min-h-[70px] sm:min-h-[85px] flex flex-col justify-center">
+        {/* Pestaña ACONTECIMIENTO */}
         {activeTab === 'EVENT' && (
-          <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
-            <span className="text-xs font-mono text-zinc-400">
-              SELECCIONÁ EL ACONTECIMIENTO HISTÓRICO:
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {eventOptions.map((opt) => {
-                const isSelected = hypothesis.event_query === opt;
-                const isEliminated = eliminatedEventOptions.includes(opt);
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 animate-in fade-in duration-100">
+            {eventOptions.map((opt) => {
+              const isSelected = hypothesis.event_query === opt;
+              const isEliminated = eliminatedEventOptions.includes(opt);
 
-                if (isEliminated) {
-                  return (
-                    <div
-                      key={opt}
-                      className="p-3 rounded-xl border border-zinc-850 bg-zinc-950/40 text-zinc-600 text-left line-through opacity-40 select-none flex items-center justify-between text-xs font-mono"
-                    >
-                      <span>{opt}</span>
-                      <span className="text-[10px] text-red-500/60 uppercase">DESCARTADO</span>
-                    </div>
-                  );
-                }
-
+              if (isEliminated) {
                 return (
-                  <button
+                  <div
                     key={opt}
-                    onClick={() => handleSelectEvent(opt)}
-                    className={`p-3 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-lg ring-2 ring-amber-500/30'
-                        : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:bg-zinc-850'
-                    }`}
+                    className="p-1.5 sm:p-2.5 rounded-lg border border-zinc-850 bg-zinc-950/40 text-zinc-600 line-through opacity-40 select-none flex items-center justify-between text-[11px] font-mono"
                   >
-                    <span className="font-mono text-xs font-bold leading-snug">
-                      {opt}
-                    </span>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-400 font-bold shrink-0" />}
-                  </button>
+                    <span className="truncate">{opt}</span>
+                    <span className="text-[9px] text-red-500/60 uppercase">DESCARTADO</span>
+                  </div>
                 );
-              })}
-            </div>
+              }
+
+              return (
+                <button
+                  key={opt}
+                  onClick={() => handleSelectEvent(opt)}
+                  className={`p-1.5 sm:p-2.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-sm ring-1 ring-amber-500/40'
+                      : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:bg-zinc-850'
+                  }`}
+                >
+                  <span className="font-mono text-[11px] sm:text-xs font-bold leading-tight line-clamp-2">
+                    {opt}
+                  </span>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 font-bold shrink-0" />}
+                </button>
+              );
+            })}
           </div>
         )}
 
         {/* Pestaña AÑO */}
         {activeTab === 'YEAR' && (
-          <div className="flex flex-col gap-3 animate-in fade-in duration-150">
+          <div className="flex flex-col gap-1.5 sm:gap-2 animate-in fade-in duration-100">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-zinc-400">
-                {decadeFilter
-                  ? `FILTRO DE DÉCADA: ${decadeFilter.min} - ${decadeFilter.max}`
-                  : 'AJUSTÁ EL AÑO HISTÓRICO:'}
+              <span className="text-[11px] font-mono text-zinc-400">
+                {decadeFilter ? `DÉCADA: ${decadeFilter.min}-${decadeFilter.max}` : 'AJUSTAR AÑO:'}
               </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-zinc-400">AÑO ELEGIDO:</span>
-                <span className="font-mono text-2xl font-black text-amber-400 bg-zinc-950 px-4 py-1 rounded-lg border border-amber-500/50 shadow-inner">
-                  {currentYear}
-                </span>
-              </div>
+              <span className="font-mono text-lg sm:text-xl font-black text-amber-400 bg-zinc-950 px-3 py-0.5 rounded border border-amber-500/40">
+                {currentYear}
+              </span>
             </div>
 
             <input
@@ -276,24 +255,21 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
               step={1}
               value={Math.max(minSliderYear, Math.min(maxSliderYear, currentYear))}
               onChange={(e) => handleSelectYear(parseInt(e.target.value, 10))}
-              className="w-full h-3 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              className="w-full h-2 bg-zinc-800 rounded appearance-none cursor-pointer accent-amber-500"
             />
 
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="text-[11px] font-mono text-zinc-400 self-center mr-1">
-                Atajos de época:
-              </span>
-              {[1810, 1850, 1889, 1903, 1912, 1914, 1928, 1936, 1945, 1960, 1969, 1973, 1989].map((year) => (
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {[1810, 1889, 1903, 1912, 1914, 1928, 1936, 1945, 1963, 1969, 1973, 1989].map((y) => (
                 <button
-                  key={year}
-                  onClick={() => handleSelectYear(year)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
-                    currentYear === year
-                      ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md scale-105'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700'
+                  key={y}
+                  onClick={() => handleSelectYear(y)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-all cursor-pointer ${
+                    currentYear === y
+                      ? 'bg-amber-500 text-zinc-950 border-amber-400 font-black'
+                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
                   }`}
                 >
-                  {year}
+                  {y}
                 </button>
               ))}
             </div>
@@ -302,63 +278,51 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
 
         {/* Pestaña UBICACIÓN */}
         {activeTab === 'LOCATION' && (
-          <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
-            <span className="text-xs font-mono text-zinc-400">
-              CIUDAD O REGIÓN HISTÓRICA:
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {HISTORICAL_CITIES.map((c) => {
-                const isSelected = hypothesis.location?.city === c.city;
-                return (
-                  <button
-                    key={c.city}
-                    onClick={() => handleSelectCity(c)}
-                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md ring-1 ring-amber-500/30'
-                        : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 text-zinc-300'
-                    }`}
-                  >
-                    <span className="font-mono text-xs font-bold">{c.city}</span>
-                    <span className="text-[10px] text-zinc-400">{c.country}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 animate-in fade-in duration-100">
+            {HISTORICAL_CITIES.map((c) => {
+              const isSelected = hypothesis.location?.city === c.city;
+              return (
+                <button
+                  key={c.city}
+                  onClick={() => handleSelectCity(c)}
+                  className={`p-1.5 rounded-lg border text-left flex flex-col transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                      : 'bg-zinc-900/90 border-zinc-800 text-zinc-300'
+                  }`}
+                >
+                  <span className="font-mono text-[11px] font-bold truncate">{c.city}</span>
+                  <span className="text-[9px] text-zinc-500 truncate">{c.country}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* 3. BARRA DE ACCIÓN Y ENVÍO */}
-      <div className="pt-3 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <span className="text-zinc-400">Tu Veredicto:</span>
+      {/* 3. BARRA INFERIOR DE ACCIÓN (Unificada en 1 sola fila) */}
+      <div className="pt-1.5 sm:pt-2 border-t border-zinc-800 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono truncate">
           {hypothesis.event_query ? (
-            <span className="px-3 py-1 bg-amber-500/20 border border-amber-500/60 text-amber-300 font-bold rounded-lg truncate max-w-[280px]">
+            <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/60 text-amber-300 font-bold rounded truncate max-w-[140px] sm:max-w-[260px]">
               🏛️ {hypothesis.event_query}
             </span>
           ) : (
-            <span className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-400 rounded-lg">
-              (Sin acontecimiento)
+            <span className="text-zinc-500 italic truncate max-w-[120px] sm:max-w-none">
+              (Elegí evento)
             </span>
           )}
-          <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold rounded-lg">
+          <span className="px-1.5 py-0.5 bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold rounded shrink-0">
             📅 {currentYear}
           </span>
-          {hypothesis.location?.city && (
-            <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg">
-              📍 {hypothesis.location.city}
-            </span>
-          )}
         </div>
 
         <button
           onClick={handleSend}
-          className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-500 text-zinc-950 px-8 py-3.5 rounded-xl font-mono text-sm font-black tracking-wider shadow-xl shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
+          className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-500 text-zinc-950 px-4 sm:px-7 py-2 sm:py-2.5 rounded-xl font-mono text-xs sm:text-sm font-black tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
         >
-          <SendHorizontal className="w-4 h-4" />
-          <span>ENVIAR RESPUESTA FINAL</span>
-          <ArrowRight className="w-4 h-4" />
+          <SendHorizontal className="w-3.5 h-3.5" />
+          <span>SELLAR</span>
         </button>
       </div>
     </div>

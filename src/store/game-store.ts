@@ -80,8 +80,9 @@ interface GameStoreState {
   useLifeline5050: () => void;
   useLifelineDecade: () => void;
 
-  // Leaderboard
-  saveLeaderboardRecord: (playerName: string) => void;
+  // Leaderboard Universal
+  fetchLeaderboard: () => Promise<void>;
+  saveLeaderboardRecord: (playerName: string) => Promise<void>;
 }
 
 // Función para barajar un array aleatoriamente (Fisher-Yates)
@@ -94,25 +95,13 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-const LOCAL_STORAGE_LEADERBOARD_KEY = 'rastro_leaderboard_v1';
-
-function loadLeaderboard(): LeaderboardEntry[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-function saveLeaderboardToStorage(entries: LeaderboardEntry[]) {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_KEY, JSON.stringify(entries));
-  } catch {}
-}
+const DEFAULT_SEED_LEADERBOARD: LeaderboardEntry[] = [
+  { id: 'l-1', player_name: 'Archivista_Mayor', total_score: 26850, rounds_won: 5, rival_name: 'V. H. Hobsbawm', date: '17/8/2026' },
+  { id: 'l-2', player_name: 'Cronista_Austral', total_score: 24920, rounds_won: 5, rival_name: 'Archivista_AGN', date: '17/8/2026' },
+  { id: 'l-3', player_name: 'SanMartin_1817', total_score: 23150, rounds_won: 4, rival_name: 'M. Bloch_1929', date: '16/8/2026' },
+  { id: 'l-4', player_name: 'Curie_Solvay', total_score: 21400, rounds_won: 4, rival_name: 'S. Zweig', date: '16/8/2026' },
+  { id: 'l-5', player_name: 'Dra_Prebisch', total_score: 19850, rounds_won: 4, rival_name: 'F. Halder', date: '15/8/2026' },
+];
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
   phase: 'IDLE',
@@ -151,7 +140,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     clues_per_round_avg: 0,
     accuracy_rate: 0,
   },
-  leaderboard: loadLeaderboard(),
+  leaderboard: DEFAULT_SEED_LEADERBOARD,
 
   setGameMode: (mode) => set({ gameMode: mode }),
   setDifficultyMode: (mode) => set({ difficultyMode: mode }),
@@ -459,7 +448,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       winner = 'RIVAL';
     }
 
-    // Cálculo de telemetría de ventaja del rival
+    // Telemetría de ventaja del rival
     const secondsAhead = Number(Math.max(0, rivalTimeRemaining - timeRemainingSeconds).toFixed(1));
     let rivalAdvantageReason: string | undefined;
 
@@ -501,7 +490,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     const newMatchesPlayed = playerStats.matches_played + 1;
     const newMatchesWon = playerStats.matches_won + (winner === 'PLAYER' ? 1 : 0);
 
-    // Si el jugador no respondió 3 veces consecutivas -> Forfeit / Derrota por inactividad
+    // Si el jugador no respondió 3 veces consecutivas -> Forfeit
     if (newUnansweredCount >= 3) {
       const forfeitSummary: MatchSummary = {
         player_total_score: updatedHistory.reduce((acc, r) => acc + r.player_score.total_score, 0),
@@ -553,12 +542,23 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     });
   },
 
-  saveLeaderboardRecord: (playerName: string) => {
+  fetchLeaderboard: async () => {
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (res.ok) {
+        const data: LeaderboardEntry[] = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          set({ leaderboard: data });
+        }
+      }
+    } catch {}
+  },
+
+  saveLeaderboardRecord: async (playerName: string) => {
     const { matchSummary, leaderboard } = get();
     if (!matchSummary) return;
 
-    const newEntry: LeaderboardEntry = {
-      id: `lead-${Date.now()}`,
+    const payload = {
       player_name: playerName.trim() || 'Investigador Anónimo',
       total_score: matchSummary.player_total_score,
       rounds_won: matchSummary.player_rounds_won,
@@ -566,12 +566,30 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       date: new Date().toLocaleDateString('es-AR'),
     };
 
-    const updatedLeaderboard = [...leaderboard, newEntry]
-      .sort((a, b) => b.total_score - a.total_score)
-      .slice(0, 20);
+    try {
+      const res = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data: LeaderboardEntry[] = await res.json();
+        if (Array.isArray(data)) {
+          set({ leaderboard: data });
+          return;
+        }
+      }
+    } catch {}
 
-    saveLeaderboardToStorage(updatedLeaderboard);
-    set({ leaderboard: updatedLeaderboard });
+    // Fallback local
+    const fallbackEntry: LeaderboardEntry = {
+      id: `lead-${Date.now()}`,
+      ...payload,
+    };
+    const updated = [...leaderboard, fallbackEntry]
+      .sort((a, b) => b.total_score - a.total_score)
+      .slice(0, 50);
+    set({ leaderboard: updated });
   },
 
   resetToLobby: () => {

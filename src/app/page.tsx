@@ -18,7 +18,6 @@ import {
   ShieldCheck,
   Radio,
   Target,
-  Flame,
   Zap,
   Eye,
   Clock,
@@ -59,7 +58,13 @@ export default function RastroApp() {
     setPlayerHypothesis,
     submitPlayerVerdict,
     resetToLobby,
+    fetchLeaderboard,
   } = useGameStore();
+
+  // Cargar tabla general universal desde la API al iniciar
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   // Sonido de urgencia cuando queda poco tiempo
   useEffect(() => {
@@ -112,7 +117,7 @@ export default function RastroApp() {
       soundFx.playCountdown();
     }, 1500);
     const tGo = setTimeout(() => {
-      setCountdown(0); // "¡YA!"
+      setCountdown(0);
       soundFx.playCountdownGo();
     }, 2200);
 
@@ -148,15 +153,18 @@ export default function RastroApp() {
   return (
     <div
       onClick={() => soundFx.unlockAudio()}
-      className="min-h-screen flex flex-col bg-[#090b0e] text-zinc-100"
+      className="min-h-screen flex flex-col bg-[#090b0e] text-zinc-100 selection:bg-amber-500 selection:text-zinc-950"
     >
       <Navbar
         currentView={currentView}
         onSwitchView={setCurrentView}
-        onOpenLeaderboard={() => setShowLeaderboard(true)}
+        onOpenLeaderboard={() => {
+          fetchLeaderboard();
+          setShowLeaderboard(true);
+        }}
       />
 
-      <main className="flex-1 flex flex-col max-w-6xl w-full mx-auto p-3 sm:p-6">
+      <main className="flex-1 flex flex-col max-w-6xl w-full mx-auto p-2 sm:p-5">
         {currentView === 'STUDIO' ? (
           <BackofficeStudio onBackToGame={() => setCurrentView('GAME')} />
         ) : (
@@ -170,20 +178,20 @@ export default function RastroApp() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-7 py-8"
+                  className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-5 sm:gap-7 py-4 sm:py-8"
                 >
-                  <div className="flex flex-col items-center gap-3">
-                    <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs font-semibold tracking-widest uppercase">
+                  <div className="flex flex-col items-center gap-2 sm:gap-3">
+                    <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px] sm:text-xs font-semibold tracking-widest uppercase">
                       Motor de Investigación Histórica 1v1 · Match 5 Rondas
                     </span>
-                    <h1 className="text-4xl sm:text-5xl font-serif font-black tracking-tight text-zinc-100 leading-tight">
+                    <h1 className="text-3xl sm:text-5xl font-serif font-black tracking-tight text-zinc-100 leading-tight">
                       La historia no es una trivia.
                       <br />
                       <span className="text-amber-400">
                         Es la evidencia.
                       </span>
                     </h1>
-                    <p className="text-sm text-zinc-400 font-sans leading-relaxed max-w-lg">
+                    <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed max-w-lg">
                       19 evidencias fotográficas icónicas de dominio público (AGN, NASA, NARA, Europeana). Identificá el acontecimiento y superá a tu rival en un blitz rápido.
                     </p>
                   </div>
@@ -195,7 +203,7 @@ export default function RastroApp() {
                         soundFx.playClick();
                         setDifficultyMode('BLITZ');
                       }}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all cursor-pointer font-bold ${
+                      className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl transition-all cursor-pointer font-bold ${
                         difficultyMode === 'BLITZ'
                           ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/25'
                           : 'text-zinc-400 hover:text-zinc-200'
@@ -209,7 +217,7 @@ export default function RastroApp() {
                         soundFx.playClick();
                         setDifficultyMode('PRACTICE');
                       }}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all cursor-pointer font-bold ${
+                      className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl transition-all cursor-pointer font-bold ${
                         difficultyMode === 'PRACTICE'
                           ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/25'
                           : 'text-zinc-400 hover:text-zinc-200'
@@ -221,13 +229,16 @@ export default function RastroApp() {
                   </div>
 
                   {/* Estadísticas del jugador y accesos */}
-                  <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-mono">
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-mono">
                     <button
-                      onClick={() => setShowLeaderboard(true)}
+                      onClick={() => {
+                        fetchLeaderboard();
+                        setShowLeaderboard(true);
+                      }}
                       className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-zinc-800 border border-amber-500/40 text-amber-300 px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer shadow-md"
                     >
                       <Trophy className="w-4 h-4 text-amber-400" />
-                      <span>Cuadro de Honor / Récords</span>
+                      <span>Cuadro de Honor Universal</span>
                     </button>
 
                     {playerStats.matches_played > 0 && (
@@ -248,14 +259,14 @@ export default function RastroApp() {
 
                   {/* Botón Principal de Matchmaking */}
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => {
                       soundFx.unlockAudio();
                       soundFx.playClick();
                       startMatchmaking();
                     }}
-                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-xl font-mono text-sm font-black tracking-wider shadow-2xl shadow-amber-500/30 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 px-8 py-3.5 sm:py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-xl font-mono text-xs sm:text-sm font-black tracking-wider shadow-2xl shadow-amber-500/30 transition-colors cursor-pointer"
                   >
                     <Swords className="w-5 h-5" />
                     {difficultyMode === 'BLITZ'
@@ -264,33 +275,33 @@ export default function RastroApp() {
                   </motion.button>
 
                   {/* Pilares del Juego */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full pt-6 border-t border-zinc-800/80 text-left font-mono text-xs text-zinc-400">
-                    <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-4 border-t border-zinc-800/80 text-left font-mono text-xs text-zinc-400">
+                    <div className="p-3 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5" />
                         1. Observación Pura
                       </span>
-                      Inspeccioná arquitectura, vehículos, modas y vestigios a alta resolución.
+                      Inspeccioná vestigios visuales históricos a alta resolución.
                     </div>
-                    <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
+                    <div className="p-3 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
-                        2. Tensión de Reloj
+                        2. Tensión Cardíaca
                       </span>
-                      Latidos cardíacos acelerando con tiempo decreciente (20s → 10s).
+                      Latidos acelerando con tiempo decreciente (20s → 10s).
                     </div>
-                    <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
+                    <div className="p-3 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Swords className="w-3.5 h-3.5" />
                         3. Match a 5 Rondas
                       </span>
-                      Sumá puntos, vencé a tu rival y disputá la revancha directa.
+                      Sumá puntos, disputá la revancha y grabá tu récord universal.
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>Fotografías de archivo verificadas · Dominio Público / Open Access</span>
+                    <span>Fotografías de archivo verificadas · 100% Dominio Público</span>
                   </div>
                 </motion.div>
               )}
@@ -305,7 +316,7 @@ export default function RastroApp() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
-                  className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-20"
+                  className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-16"
                 >
                   <div className="relative">
                     <div className="w-20 h-20 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin flex items-center justify-center">
@@ -319,7 +330,7 @@ export default function RastroApp() {
                         : 'Preparando Sesión de Entrenamiento...'}
                     </h2>
                     <p className="text-xs font-mono text-zinc-500">
-                      Seleccionando 5 evidencias y sincronizando cronómetros de duelo
+                      Seleccionando 5 evidencias y sincronizando cronómetros
                     </p>
                   </div>
                 </motion.div>
@@ -335,7 +346,7 @@ export default function RastroApp() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.1 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-20"
+                  className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-16"
                 >
                   {phase === 'MATCH_FOUND' && (
                     <>
@@ -391,49 +402,36 @@ export default function RastroApp() {
               )}
             </AnimatePresence>
 
-            {/* 4. RONDA ACTIVA (INVESTIGACIÓN Y DEEP ZOOM) */}
+            {/* 4. RONDA ACTIVA: OPTIMIZADA PARA AJUSTARSE A 1 SOLA PANTALLA EN MÓVIL SIN SCROLL */}
             <AnimatePresence mode="wait">
               {phase === 'INVESTIGATING' && currentEvidence && (
                 <motion.div
                   key="investigating"
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="flex-1 flex flex-col gap-3"
+                  transition={{ duration: 0.25 }}
+                  className="flex-1 h-[calc(100dvh-4.2rem)] sm:h-auto flex flex-col justify-between overflow-hidden gap-1.5 sm:gap-3"
                 >
-                  {/* Banner de Misión + Ronda Activa */}
+                  {/* HUD Superior Compacto: Ronda + Rival + Reloj de Arena */}
                   <div
-                    className={`flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border rounded-lg px-4 py-2 text-xs font-mono transition-colors ${urgencyClass}`}
+                    className={`grid grid-cols-12 gap-2 items-center bg-[#0e1117] border rounded-xl p-2 sm:p-2.5 shadow-lg transition-colors shrink-0 ${urgencyClass}`}
                   >
-                    <div className="flex items-center gap-2 text-amber-300 font-bold">
-                      <Target className="w-4 h-4 text-amber-400" />
-                      <span>RONDA {roundNumber}/5 · SELECCIONÁ EL ACONTECIMIENTO</span>
-                      {winStreak >= 2 && (
-                        <span className="ml-2 px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-300 text-[10px] font-bold">
-                          🔥 Racha: {winStreak}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-zinc-400 text-[11px]">
-                      <span>1. Mirá la foto</span>
-                      <span>•</span>
-                      <span>2. Tocá el Evento</span>
-                      <span>•</span>
-                      <span className="text-amber-400 font-bold">3. Sellar Veredicto</span>
-                    </div>
-                  </div>
-
-                  {/* Barra Superior de Estado y Tensión */}
-                  <div
-                    className={`grid grid-cols-12 gap-3 items-center bg-[#0e1117] border rounded-xl p-3 shadow-lg transition-colors ${urgencyClass}`}
-                  >
-                    {/* Rival 1v1 */}
-                    <div className="col-span-8 md:col-span-9">
+                    <div className="col-span-8 sm:col-span-9 flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5 text-amber-300 font-mono text-[10px] sm:text-xs font-bold truncate">
+                        <Target className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span>Ronda {roundNumber}/5</span>
+                        {winStreak >= 2 && (
+                          <span className="px-1.5 py-0.2 bg-amber-500/20 rounded text-[9px] text-amber-300">
+                            🔥x{winStreak}
+                          </span>
+                        )}
+                        <span className="text-zinc-500">|</span>
+                        <span className="text-zinc-400 truncate">Elegí el Evento</span>
+                      </div>
                       <RivalStatus rival={rival} timeRemaining={timeRemainingSeconds} />
                     </div>
 
-                    {/* Reloj de Arena Físico */}
-                    <div className="col-span-4 md:col-span-3 flex justify-end pr-2">
+                    <div className="col-span-4 sm:col-span-3 flex justify-end pr-1 shrink-0">
                       <Sandglass
                         timeRemaining={timeRemainingSeconds}
                         totalTime={totalTimeSeconds}
@@ -442,7 +440,7 @@ export default function RastroApp() {
                   </div>
 
                   {/* Lienzo Principal de Evidencia (Deep Zoom & Pistas) */}
-                  <div className="w-full h-[48vh] min-h-[380px]">
+                  <div className="flex-1 min-h-[160px] max-h-[38vh] sm:max-h-[48vh] w-full rounded-xl overflow-hidden shadow-xl border border-zinc-800">
                     <DeepZoomViewer
                       imageUrl={currentEvidence.image_url}
                       clues={currentEvidence.visual_clues}
@@ -451,7 +449,7 @@ export default function RastroApp() {
                     />
                   </div>
 
-                  {/* Formulario de Hipótesis (Año / Evento / Ubicación / Ayudas) */}
+                  {/* Formulario de Hipótesis Compacto */}
                   <HypothesisForm
                     evidence={currentEvidence}
                     hypothesis={playerHypothesis}
@@ -477,7 +475,7 @@ export default function RastroApp() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-20"
+                  className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-16"
                 >
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -496,14 +494,14 @@ export default function RastroApp() {
               )}
             </AnimatePresence>
 
-            {/* 6. POST-RONDA INTERMEDIA */}
+            {/* 6. POST-RONDA INTERMEDIA (7 SEGUNDOS AUTO-AVANCE) */}
             <AnimatePresence mode="wait">
               {phase === 'POST_ROUND_ARCHIVE' && roundResult && (
                 <motion.div
                   key="postround"
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                 >
                   <PostRoundArchive
                     result={roundResult}
@@ -528,14 +526,17 @@ export default function RastroApp() {
                   key="matchover"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                 >
                   <MatchSummaryModal
                     onRematch={() => {
                       soundFx.playClick();
                       startRematch();
                     }}
-                    onViewLeaderboard={() => setShowLeaderboard(true)}
+                    onViewLeaderboard={() => {
+                      fetchLeaderboard();
+                      setShowLeaderboard(true);
+                    }}
                     onBackToLobby={() => {
                       soundFx.playClick();
                       resetToLobby();
@@ -545,7 +546,7 @@ export default function RastroApp() {
               )}
             </AnimatePresence>
 
-            {/* Modal de Tabla General / Leaderboard */}
+            {/* Modal de Tabla General Universal */}
             {showLeaderboard && (
               <LeaderboardModal onClose={() => setShowLeaderboard(false)} />
             )}
