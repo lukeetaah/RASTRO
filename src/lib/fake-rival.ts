@@ -31,58 +31,64 @@ export function generateSimulatedRival(): RivalState {
 export function calculateRivalLockTime(archetype: RivalArchetype): number {
   switch (archetype) {
     case 'SNIPER':
-      // Responde velozmente (entre segundo 18 y 28 de partida -> 62 a 72s restantes)
-      return 90 - (18 + Math.floor(Math.random() * 10));
+      // Responde rápido (a los 25-35s de partida -> 55-65s restantes)
+      return 90 - (25 + Math.floor(Math.random() * 10));
     case 'DETECTIVE':
-      // Analiza con calma (entre segundo 40 y 58 de partida -> 32 a 50s restantes)
-      return 90 - (40 + Math.floor(Math.random() * 18));
+      // Analiza con calma (a los 45-60s de partida -> 30-45s restantes)
+      return 90 - (45 + Math.floor(Math.random() * 15));
     case 'GAMBLER':
-      // Se arriesga al final (entre segundo 68 y 84 de partida -> 6 a 22s restantes)
-      return 90 - (68 + Math.floor(Math.random() * 16));
+      // Se arriesga tarde (a los 65-80s de partida -> 10-25s restantes)
+      return 90 - (65 + Math.floor(Math.random() * 15));
   }
 }
 
-// Genera una hipótesis del rival congruente con su arquetipo y margen de error
+// Genera una hipótesis del rival balanceada y con fallos humanos reales
 export function generateRivalHypothesis(
   evidence: CanonicalEvidence,
   archetype: RivalArchetype
 ): { hypothesis: PlayerHypothesis; cluesUsed: string[] } {
   let yearError = 0;
-  let latOffset = 0;
-  let lonOffset = 0;
-  let eventGuess = evidence.canonical_event;
+  let hasCorrectLocation = true;
+  let hasCorrectEvent = true;
   const cluesUsed: string[] = [];
 
   if (archetype === 'SNIPER') {
-    // 70% acierto exacto en año, 30% desvío de 1 a 3 años
-    if (Math.random() > 0.7) {
-      yearError = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.floor(Math.random() * 3));
+    // 50% acierto exacto en año, 50% desvío de 2 a 6 años por apresurarse
+    if (Math.random() > 0.5) {
+      yearError = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.floor(Math.random() * 5));
+    }
+    // 25% de veces erra el evento por contestar rápido
+    if (Math.random() > 0.75) {
+      hasCorrectEvent = false;
     }
   } else if (archetype === 'DETECTIVE') {
-    // Suele pedir 1 o 2 pistas
+    // Pide 1 o 2 pistas
     if (evidence.visual_clues.length > 0) {
       cluesUsed.push(evidence.visual_clues[0].id);
-      if (evidence.visual_clues.length > 1 && Math.random() > 0.5) {
+      if (evidence.visual_clues.length > 1 && Math.random() > 0.6) {
         cluesUsed.push(evidence.visual_clues[1].id);
       }
     }
-    // 85% acierto exacto en año
-    if (Math.random() > 0.85) {
-      yearError = (Math.random() > 0.5 ? 1 : -1) * 1;
+    // 60% acierto exacto, 40% desvío de 1 a 3 años
+    if (Math.random() > 0.6) {
+      yearError = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.floor(Math.random() * 3));
     }
   } else if (archetype === 'GAMBLER') {
-    // Mayor variabilidad
-    yearError = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.floor(Math.random() * 8));
-    latOffset = (Math.random() - 0.5) * 1.5;
-    lonOffset = (Math.random() - 0.5) * 1.5;
-    if (Math.random() > 0.4) {
-      eventGuess = evidence.accepted_event_aliases[0] || evidence.canonical_event;
+    // Fuerte variabilidad
+    yearError = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.floor(Math.random() * 10));
+    if (Math.random() > 0.5) {
+      hasCorrectLocation = false;
+    }
+    if (Math.random() > 0.5) {
+      hasCorrectEvent = false;
     }
   }
 
   const guessedYear = evidence.canonical_date.year + yearError;
-  const guessedLat = evidence.canonical_location.latitude + latOffset;
-  const guessedLon = evidence.canonical_location.longitude + lonOffset;
+  const guessedCity = hasCorrectLocation ? evidence.canonical_location.city : 'Otra Ciudad';
+  const guessedLat = hasCorrectLocation ? evidence.canonical_location.latitude : evidence.canonical_location.latitude + 8;
+  const guessedLon = hasCorrectLocation ? evidence.canonical_location.longitude : evidence.canonical_location.longitude + 8;
+  const guessedEvent = hasCorrectEvent ? evidence.canonical_event : 'Acontecimiento Histórico General';
 
   return {
     hypothesis: {
@@ -90,9 +96,9 @@ export function generateRivalHypothesis(
       location: {
         latitude: guessedLat,
         longitude: guessedLon,
-        city: evidence.canonical_location.city,
+        city: guessedCity,
       },
-      event_query: eventGuess,
+      event_query: guessedEvent,
     },
     cluesUsed,
   };
