@@ -11,7 +11,6 @@ import {
   SendHorizontal,
   Check,
   ArrowRight,
-  Sparkles,
   Zap,
   Filter,
 } from 'lucide-react';
@@ -32,6 +31,7 @@ const HISTORICAL_CITIES = [
   { city: 'Santiago', country: 'Chile', lat: -33.4429, lon: -70.6539 },
   { city: 'Bruselas', country: 'Bélgica', lat: 50.8503, lon: 4.3517 },
   { city: 'Berlín', country: 'Alemania', lat: 52.5163, lon: 13.3777 },
+  { city: 'París', country: 'Francia', lat: 48.8566, lon: 2.3522 },
   { city: 'Hiroshima', country: 'Japón', lat: 34.3853, lon: 132.4553 },
   { city: 'Sarajevo', country: 'Bosnia', lat: 43.8563, lon: 18.4131 },
   { city: 'Washington D.C.', country: 'EE.UU.', lat: 38.8893, lon: -77.0502 },
@@ -47,7 +47,7 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
   timeRemaining,
 }) => {
   const [activeTab, setActiveTab] = useState<'EVENT' | 'YEAR' | 'LOCATION'>('EVENT');
-  const currentYear = hypothesis.year ?? 1950;
+  const currentYear = hypothesis.year ?? evidence.canonical_date.year;
 
   const {
     lifelinesRemaining,
@@ -57,7 +57,7 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     useLifelineDecade,
   } = useGameStore();
 
-  // Opciones contextuales desafiantes (sin mostrar el año en el texto)
+  // Opciones contextuales desafiantes (sin mostrar el año en el texto del chip)
   const eventOptions = evidence.distractor_events || [
     'Acontecimiento Histórico A',
     'Acontecimiento Histórico B',
@@ -81,11 +81,24 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     });
   };
 
+  // Al elegir acontecimiento, auto-configuramos los metadatos canónicos de esa hipótesis
   const handleSelectEvent = (eventName: string) => {
     soundFx.playClick();
-    onUpdateHypothesis({
-      event_query: eventName,
-    });
+    if (eventName.toLowerCase().trim() === evidence.canonical_event.toLowerCase().trim()) {
+      onUpdateHypothesis({
+        event_query: eventName,
+        year: evidence.canonical_date.year,
+        location: {
+          latitude: evidence.canonical_location.latitude,
+          longitude: evidence.canonical_location.longitude,
+          city: evidence.canonical_location.city,
+        },
+      });
+    } else {
+      onUpdateHypothesis({
+        event_query: eventName,
+      });
+    }
   };
 
   const handleSend = () => {
@@ -199,7 +212,7 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
         {activeTab === 'EVENT' && (
           <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
             <span className="text-xs font-mono text-zinc-400">
-              SELECCIONÁ EL ACONTECIMIENTO HISTÓRICO EXACTO:
+              SELECCIONÁ EL ACONTECIMIENTO HISTÓRICO:
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {eventOptions.map((opt) => {
@@ -270,7 +283,7 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
               <span className="text-[11px] font-mono text-zinc-400 self-center mr-1">
                 Atajos de época:
               </span>
-              {[1810, 1850, 1910, 1920, 1930, 1945, 1960, 1970, 1989, 2000].map((year) => (
+              {[1810, 1850, 1889, 1903, 1912, 1914, 1928, 1936, 1945, 1960, 1969, 1973, 1989].map((year) => (
                 <button
                   key={year}
                   onClick={() => handleSelectYear(year)}

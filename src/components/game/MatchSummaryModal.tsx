@@ -4,15 +4,11 @@ import React, { useState } from 'react';
 import { useGameStore } from '@/store/game-store';
 import {
   Trophy,
-  Award,
   RotateCcw,
-  Sparkles,
-  Swords,
   Crown,
   Medal,
   CheckCircle2,
-  ArrowRight,
-  TrendingUp,
+  GraduationCap,
 } from 'lucide-react';
 import { soundFx } from '@/lib/sound';
 
@@ -27,7 +23,7 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
   onViewLeaderboard,
   onBackToLobby,
 }) => {
-  const { matchSummary, saveLeaderboardRecord } = useGameStore();
+  const { matchSummary, difficultyMode, setDifficultyMode, saveLeaderboardRecord, resetToLobby } = useGameStore();
   const [playerName, setPlayerName] = useState('');
   const [hasSaved, setHasSaved] = useState(false);
 
@@ -35,6 +31,8 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
 
   const isPlayerWinner = matchSummary.winner === 'PLAYER';
   const isTie = matchSummary.winner === 'TIE';
+  const isBlitz = difficultyMode === 'BLITZ';
+  const lostBadly = !isPlayerWinner && !isTie && matchSummary.player_rounds_won <= 1;
 
   const handleSaveScore = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +40,12 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
     saveLeaderboardRecord(playerName);
     setHasSaved(true);
     soundFx.playStamp();
+  };
+
+  const handleSwitchToPractice = () => {
+    soundFx.playClick();
+    setDifficultyMode('PRACTICE');
+    resetToLobby();
   };
 
   return (
@@ -112,6 +116,29 @@ export const MatchSummaryModal: React.FC<MatchSummaryModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* CTA de Modo Práctica (solo si perdió en Blitz y perdió feo) */}
+      {lostBadly && isBlitz && (
+        <div className="bg-gradient-to-r from-emerald-950/60 via-zinc-900 to-emerald-950/40 border border-emerald-500/50 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl animate-in slide-in-from-bottom duration-300">
+          <div className="flex flex-col gap-1.5 text-left">
+            <span className="font-mono text-xs text-emerald-400 uppercase font-bold flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4" />
+              ¿EL BLITZ FUE MUY RÁPIDO?
+            </span>
+            <p className="text-sm text-zinc-300 font-sans max-w-md">
+              Probá el <strong className="text-emerald-300">Modo Práctica</strong> con <strong>35 segundos</strong> por ronda y un rival más tranquilo.
+              Ideal para familiarizarte con los eventos antes de volver al 1v1 Blitz.
+            </p>
+          </div>
+          <button
+            onClick={handleSwitchToPractice}
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-mono text-xs font-black tracking-wider shadow-xl shadow-emerald-600/25 transition-all cursor-pointer active:scale-95 shrink-0"
+          >
+            <GraduationCap className="w-4 h-4" />
+            <span>ACTIVAR MODO PRÁCTICA</span>
+          </button>
+        </div>
+      )}
 
       {/* Historial de las 5 Rondas */}
       <div className="bg-[#0f1218] border border-zinc-800 rounded-2xl p-5 flex flex-col gap-3 shadow-xl">

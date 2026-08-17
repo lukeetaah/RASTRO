@@ -23,6 +23,7 @@ import {
   Eye,
   Clock,
   Trophy,
+  GraduationCap,
 } from 'lucide-react';
 import { soundFx } from '@/lib/sound';
 
@@ -37,6 +38,7 @@ export default function RastroApp() {
     phase,
     roundNumber,
     maxRounds,
+    difficultyMode,
     currentEvidence,
     timeRemainingSeconds,
     totalTimeSeconds,
@@ -46,6 +48,7 @@ export default function RastroApp() {
     rival,
     roundResult,
     playerStats,
+    setDifficultyMode,
     startMatchmaking,
     startRound,
     nextRoundOrFinishMatch,
@@ -60,7 +63,7 @@ export default function RastroApp() {
 
   // Sonido de urgencia cuando queda poco tiempo
   useEffect(() => {
-    if (phase === 'INVESTIGATING' && timeRemainingSeconds <= 15 && timeRemainingSeconds > 0) {
+    if (phase === 'INVESTIGATING' && timeRemainingSeconds <= 8 && timeRemainingSeconds > 0) {
       soundFx.playUrgentTick();
     }
   }, [phase, timeRemainingSeconds]);
@@ -96,21 +99,22 @@ export default function RastroApp() {
       return;
     }
 
+    soundFx.unlockAudio();
     setCountdown(3);
     soundFx.playCountdown();
 
     const t2 = setTimeout(() => {
       setCountdown(2);
       soundFx.playCountdown();
-    }, 800);
+    }, 750);
     const t1 = setTimeout(() => {
       setCountdown(1);
       soundFx.playCountdown();
-    }, 1600);
+    }, 1500);
     const tGo = setTimeout(() => {
       setCountdown(0); // "¡YA!"
       soundFx.playCountdownGo();
-    }, 2400);
+    }, 2200);
 
     return () => {
       clearTimeout(t2);
@@ -135,14 +139,17 @@ export default function RastroApp() {
   ) || null;
 
   const urgencyClass =
-    timeRemainingSeconds <= 15
-      ? 'border-red-500/40'
-      : timeRemainingSeconds <= 30
-      ? 'border-amber-500/30'
+    timeRemainingSeconds <= 6
+      ? 'border-red-500/50 ring-2 ring-red-500/20'
+      : timeRemainingSeconds <= 12
+      ? 'border-amber-500/40'
       : 'border-zinc-800';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090b0e] text-zinc-100">
+    <div
+      onClick={() => soundFx.unlockAudio()}
+      className="min-h-screen flex flex-col bg-[#090b0e] text-zinc-100"
+    >
       <Navbar
         currentView={currentView}
         onSwitchView={setCurrentView}
@@ -163,11 +170,11 @@ export default function RastroApp() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-8 py-12"
+                  className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-7 py-8"
                 >
-                  <div className="flex flex-col items-center gap-4">
+                  <div className="flex flex-col items-center gap-3">
                     <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs font-semibold tracking-widest uppercase">
-                      Duelo de Investigación Histórica 1v1 · 5 Rondas
+                      Motor de Investigación Histórica 1v1 · Match 5 Rondas
                     </span>
                     <h1 className="text-4xl sm:text-5xl font-serif font-black tracking-tight text-zinc-100 leading-tight">
                       La historia no es una trivia.
@@ -177,9 +184,40 @@ export default function RastroApp() {
                       </span>
                     </h1>
                     <p className="text-sm text-zinc-400 font-sans leading-relaxed max-w-lg">
-                      Competí en un match de 5 rondas a tiempo decreciente.
-                      Observá fotografías de archivo, identificá vestigios y superá a tu rival antes de que se agote la arena.
+                      19 evidencias fotográficas icónicas de dominio público (AGN, NASA, NARA, Europeana). Identificá el acontecimiento y superá a tu rival en un blitz rápido.
                     </p>
+                  </div>
+
+                  {/* Selector de Modo de Dificultad */}
+                  <div className="flex items-center gap-2 bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800 font-mono text-xs shadow-inner">
+                    <button
+                      onClick={() => {
+                        soundFx.playClick();
+                        setDifficultyMode('BLITZ');
+                      }}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all cursor-pointer font-bold ${
+                        difficultyMode === 'BLITZ'
+                          ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/25'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>⚡ Duelo Blitz 1v1 (20s)</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        soundFx.playClick();
+                        setDifficultyMode('PRACTICE');
+                      }}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all cursor-pointer font-bold ${
+                        difficultyMode === 'PRACTICE'
+                          ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/25'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>🎓 Práctica Guiada (35s)</span>
+                    </button>
                   </div>
 
                   {/* Estadísticas del jugador y accesos */}
@@ -213,13 +251,16 @@ export default function RastroApp() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
+                      soundFx.unlockAudio();
                       soundFx.playClick();
                       startMatchmaking();
                     }}
                     className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-xl font-mono text-sm font-black tracking-wider shadow-2xl shadow-amber-500/30 transition-colors cursor-pointer"
                   >
                     <Swords className="w-5 h-5" />
-                    INICIAR DUELO (5 RONDAS)
+                    {difficultyMode === 'BLITZ'
+                      ? 'INICIAR DUELO BLITZ (5 RONDAS)'
+                      : 'INICIAR PRÁCTICA GUIADA (5 RONDAS)'}
                   </motion.button>
 
                   {/* Pilares del Juego */}
@@ -234,9 +275,9 @@ export default function RastroApp() {
                     <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
-                        2. Dificultad Creciente
+                        2. Tensión de Reloj
                       </span>
-                      El tiempo disminuye por ronda (75s → 60s → 50s → 40s → 30s).
+                      Latidos cardíacos acelerando con tiempo decreciente (20s → 10s).
                     </div>
                     <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
@@ -249,7 +290,7 @@ export default function RastroApp() {
 
                   <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>Fotografías de archivo verificadas (AGN, NASA, NARA, Europeana)</span>
+                    <span>Fotografías de archivo verificadas · Dominio Público / Open Access</span>
                   </div>
                 </motion.div>
               )}
@@ -273,10 +314,12 @@ export default function RastroApp() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <h2 className="text-xl font-mono font-bold text-zinc-200">
-                      Buscando Rival en el Archivo...
+                      {difficultyMode === 'BLITZ'
+                        ? 'Buscando Rival en el Archivo...'
+                        : 'Preparando Sesión de Entrenamiento...'}
                     </h2>
                     <p className="text-xs font-mono text-zinc-500">
-                      Preparando baraja de 5 evidencias y sincronizando cronómetros
+                      Seleccionando 5 evidencias y sincronizando cronómetros de duelo
                     </p>
                   </div>
                 </motion.div>
@@ -306,7 +349,9 @@ export default function RastroApp() {
                       </motion.div>
                       <div className="flex flex-col gap-1">
                         <span className="font-mono text-xs text-emerald-400 font-bold uppercase tracking-widest">
-                          ¡DUELO EMPAREJADO (MATCH A 5 RONDAS)!
+                          {difficultyMode === 'BLITZ'
+                            ? '¡DUELO BLITZ EMPAREJADO (5 RONDAS)!'
+                            : '¡ENTRENAMIENTO GUIADO (5 RONDAS)!'}
                         </span>
                         <h2 className="text-2xl font-serif font-bold text-zinc-100">
                           Tú vs {rival.name}
@@ -320,7 +365,7 @@ export default function RastroApp() {
 
                   {phase === 'ROUND_START' && countdown !== null && (
                     <div className="flex flex-col items-center gap-4">
-                      <div className="flex items-center gap-2 font-mono text-xs text-amber-400 uppercase tracking-widest font-bold bg-zinc-950 px-3 py-1 rounded-full border border-amber-500/40">
+                      <div className="flex items-center gap-2 font-mono text-xs text-amber-400 uppercase tracking-widest font-bold bg-zinc-950 px-4 py-1.5 rounded-full border border-amber-500/40">
                         <span>RONDA {roundNumber} DE {maxRounds}</span>
                         <span>•</span>
                         <span>{totalTimeSeconds} SEGUNDOS</span>
@@ -362,7 +407,7 @@ export default function RastroApp() {
                   >
                     <div className="flex items-center gap-2 text-amber-300 font-bold">
                       <Target className="w-4 h-4 text-amber-400" />
-                      <span>RONDA {roundNumber}/5 · IDENTIFICÁ EL ACONTECIMIENTO Y EL AÑO</span>
+                      <span>RONDA {roundNumber}/5 · SELECCIONÁ EL ACONTECIMIENTO</span>
                       {winStreak >= 2 && (
                         <span className="ml-2 px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-300 text-[10px] font-bold">
                           🔥 Racha: {winStreak}
@@ -372,7 +417,7 @@ export default function RastroApp() {
                     <div className="flex items-center gap-2 text-zinc-400 text-[11px]">
                       <span>1. Mirá la foto</span>
                       <span>•</span>
-                      <span>2. Elegí Acontecimiento</span>
+                      <span>2. Tocá el Evento</span>
                       <span>•</span>
                       <span className="text-amber-400 font-bold">3. Sellar Veredicto</span>
                     </div>

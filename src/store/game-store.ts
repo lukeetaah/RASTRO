@@ -18,12 +18,14 @@ import {
 import { calculateScore } from '@/lib/scoring';
 import { soundFx } from '@/lib/sound';
 
-// Duración de tiempo decreciente por ronda (de 1 a 5)
-const ROUND_DURATIONS = [75, 60, 50, 40, 30];
+// Duraciones rápidas de tiempo (Blitz competitivo de 20s inicial decreciente)
+const BLITZ_ROUND_DURATIONS = [20, 18, 15, 12, 10];
+const PRACTICE_ROUND_DURATIONS = [35, 35, 35, 35, 35];
 
 interface GameStoreState {
   phase: GamePhase;
   gameMode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE';
+  difficultyMode: 'BLITZ' | 'PRACTICE';
   currentEvidence: CanonicalEvidence | null;
   unplayedDeck: string[]; // Baraja de IDs sin repetir
 
@@ -60,6 +62,7 @@ interface GameStoreState {
 
   // Acciones
   setGameMode: (mode: 'BOT_TRAINING' | 'MULTIPLAYER_ONLINE') => void;
+  setDifficultyMode: (mode: 'BLITZ' | 'PRACTICE') => void;
   startMatchmaking: () => void;
   startRound: (customEvidence?: CanonicalEvidence) => void;
   nextRoundOrFinishMatch: () => void;
@@ -113,6 +116,7 @@ function saveLeaderboardToStorage(entries: LeaderboardEntry[]) {
 export const useGameStore = create<GameStoreState>((set, get) => ({
   phase: 'IDLE',
   gameMode: 'BOT_TRAINING',
+  difficultyMode: 'BLITZ',
   currentEvidence: null,
   unplayedDeck: [],
 
@@ -125,8 +129,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   eliminatedEventOptions: [],
   decadeFilter: null,
 
-  timeRemainingSeconds: 75,
-  totalTimeSeconds: 75,
+  timeRemainingSeconds: 20,
+  totalTimeSeconds: 20,
   revealedClueIds: [],
   playerHypothesis: {},
   isInspectingImage: false,
@@ -148,8 +152,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   leaderboard: loadLeaderboard(),
 
   setGameMode: (mode) => set({ gameMode: mode }),
+  setDifficultyMode: (mode) => set({ difficultyMode: mode }),
 
   startMatchmaking: () => {
+    soundFx.unlockAudio();
+    const { difficultyMode } = get();
     set({
       phase: 'MATCHMAKING',
       roundNumber: 1,
@@ -159,7 +166,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     });
 
     setTimeout(() => {
-      const simulatedRival = generateSimulatedRival();
+      const simulatedRival = generateSimulatedRival(difficultyMode === 'PRACTICE');
       set({
         phase: 'MATCH_FOUND',
         rival: simulatedRival,
@@ -167,19 +174,19 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
       setTimeout(() => {
         get().startRound();
-      }, 1600);
-    }, 1800);
+      }, 1500);
+    }, 1600);
   },
 
   startRound: (customEvidence?: CanonicalEvidence) => {
+    soundFx.unlockAudio();
     let evidence: CanonicalEvidence;
-    const { roundNumber } = get();
+    const { roundNumber, difficultyMode } = get();
 
     if (customEvidence) {
       evidence = customEvidence;
     } else {
       let currentDeck = get().unplayedDeck;
-      // Si la baraja está vacía o tiene menos preguntas que las necesarias, barajamos todo el corpus
       if (!currentDeck || currentDeck.length === 0) {
         currentDeck = shuffleArray(CANONICAL_EVIDENCES.map((e) => e.id));
       }
@@ -190,13 +197,15 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       set({ unplayedDeck: remainingDeck });
     }
 
-    // Duración escalada por ronda: R1=75s, R2=60s, R3=50s, R4=40s, R5=30s
-    const roundIndex = Math.min(roundNumber - 1, ROUND_DURATIONS.length - 1);
-    const roundDuration = ROUND_DURATIONS[roundIndex];
+    // Duración decreciente (Blitz: 20, 18, 15, 12, 10s | Práctica: 35s)
+    const durations = difficultyMode === 'PRACTICE' ? PRACTICE_ROUND_DURATIONS : BLITZ_ROUND_DURATIONS;
+    const roundIndex = Math.min(roundNumber - 1, durations.length - 1);
+    const roundDuration = durations[roundIndex];
 
-    const currentRival = get().rival || generateSimulatedRival();
-    const lockTarget = calculateRivalLockTime(currentRival.archetype);
-    const rivalData = generateRivalHypothesis(evidence, currentRival.archetype);
+    const currentRival = get().rival || generateSimulatedRival(difficultyMode === 'PRACTICE');
+    const isPractice = difficultyMode === 'PRACTICE';
+    const lockTarget = calculateRivalLockTime(currentRival.archetype, roundDuration, isPractice);
+    const rivalData = generateRivalHypothesis(evidence, currentRival.archetype, isPractice);
 
     set({
       phase: 'ROUND_START',
@@ -207,8 +216,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       eliminatedEventOptions: [],
       decadeFilter: null,
       playerHypothesis: {
-        // Default neutral year (1950) instead of giving away the answer
-        year: 1950,
+        year: evidence.canonical_date.year,
         location: undefined,
         event_query: '',
       },
@@ -218,7 +226,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         has_locked: false,
         time_remaining_seconds: roundDuration,
       },
-      rivalLockTargetTime: Math.min(roundDuration - 10, lockTarget),
+      rivalLockTargetTime: lockTarget,
       rivalHypothesisData: rivalData,
       roundResult: null,
     });
@@ -227,14 +235,13 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       if (get().phase === 'ROUND_START') {
         set({ phase: 'INVESTIGATING' });
       }
-    }, 1200);
+    }, 1100);
   },
 
   nextRoundOrFinishMatch: () => {
     const { roundNumber, maxRounds, roundHistory, rival } = get();
 
     if (roundNumber >= maxRounds) {
-      // Fin del match de 5 rondas -> Calcular resumen
       const playerTotal = roundHistory.reduce((acc, r) => acc + r.player_score.total_score, 0);
       const rivalTotal = roundHistory.reduce((acc, r) => acc + r.rival_score.total_score, 0);
       const playerRoundsWon = roundHistory.filter((r) => r.winner === 'PLAYER').length;
@@ -260,14 +267,12 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         matchSummary: summary,
       });
     } else {
-      // Avanzar a la siguiente ronda del duelo
       set({ roundNumber: roundNumber + 1 });
       get().startRound();
     }
   },
 
   startRematch: () => {
-    const { rival } = get();
     set({
       roundNumber: 1,
       roundHistory: [],
@@ -318,7 +323,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       decadeFilter: { min: decadeStart, max: decadeEnd },
       playerHypothesis: {
         ...get().playerHypothesis,
-        year: decadeStart + 5, // Sits in the middle of the decade
+        year: correctYear,
       },
     });
   },
@@ -329,14 +334,14 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     const newTime = Math.max(0, timeRemainingSeconds - seconds);
 
-    // Audio de latidos del corazón que se acelera con el tiempo
+    // Audio de latidos del corazón (lub-dub) acelerando
     const ratio = newTime / totalTimeSeconds;
     if (newTime > 0) {
-      if (ratio <= 0.2) {
+      if (ratio <= 0.3) {
         soundFx.playHeartbeat('critical');
-      } else if (ratio <= 0.4) {
+      } else if (ratio <= 0.6) {
         soundFx.playHeartbeat('high');
-      } else if (ratio <= 0.65) {
+      } else {
         soundFx.playHeartbeat('medium');
       }
     }
@@ -373,7 +378,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     if (!currentEvidence || revealedClueIds.includes(clueId)) return;
 
     const clue = currentEvidence.visual_clues.find((c) => c.id === clueId);
-    const penalty = clue ? clue.time_penalty_seconds : 7;
+    const penalty = clue ? clue.time_penalty_seconds : 4;
     const penalizedTime = Math.max(1, timeRemainingSeconds - penalty);
 
     set({
@@ -400,7 +405,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     set({ phase: 'ROUND_RESOLVING' });
     setTimeout(() => {
       get().resolveRound();
-    }, 1400);
+    }, 1200);
   },
 
   resolveRound: () => {
@@ -427,7 +432,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       totalTimeSeconds
     );
 
-    const rivalTimeRemaining = rival.lock_timestamp_seconds || 20;
+    const rivalTimeRemaining = rival.lock_timestamp_seconds || 5;
     const rivalScore = calculateScore(
       currentEvidence,
       rivalHypothesisData.hypothesis,
@@ -518,7 +523,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       lifelinesRemaining: 2,
       eliminatedEventOptions: [],
       decadeFilter: null,
-      timeRemainingSeconds: 75,
+      timeRemainingSeconds: 20,
       revealedClueIds: [],
       playerHypothesis: {},
       selectedClueModalId: null,
