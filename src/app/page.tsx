@@ -22,6 +22,8 @@ import {
   Flame,
 } from 'lucide-react';
 
+import { soundFx } from '@/lib/sound';
+
 export default function RastroApp() {
   const [currentView, setCurrentView] = useState<'GAME' | 'STUDIO'>('GAME');
 
@@ -44,6 +46,13 @@ export default function RastroApp() {
     submitPlayerVerdict,
     resetToLobby,
   } = useGameStore();
+
+  // Reproducir sonido de victoria / cierre de ronda
+  useEffect(() => {
+    if (phase === 'POST_ROUND_ARCHIVE' && roundResult) {
+      soundFx.playVictory();
+    }
+  }, [phase, roundResult]);
 
   // Timer loop en fases activas
   useEffect(() => {
