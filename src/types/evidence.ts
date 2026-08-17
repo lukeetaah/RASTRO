@@ -99,6 +99,7 @@ export const CanonicalEvidenceSchema = z.object({
   
   // Sistema de Investigación
   visual_clues: z.array(VisualClueSchema),
+  distractor_events: z.array(z.string()).optional(),
   
   // Validación Histórica
   editorial_status: EditorialStatusSchema,

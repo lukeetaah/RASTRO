@@ -2,14 +2,16 @@
 
 import React from 'react';
 import { useGameStore } from '@/store/game-store';
-import { ShieldCheck, Flame, Compass, Settings } from 'lucide-react';
+import { Trophy, Flame, Compass, Settings } from 'lucide-react';
+import { soundFx } from '@/lib/sound';
 
 interface NavbarProps {
   currentView: 'GAME' | 'STUDIO';
   onSwitchView: (view: 'GAME' | 'STUDIO') => void;
+  onOpenLeaderboard?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentView, onSwitchView }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentView, onSwitchView, onOpenLeaderboard }) => {
   const { playerStats } = useGameStore();
 
   return (
@@ -31,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onSwitchView }) => 
         </div>
 
         {/* Stats del Investigador */}
-        <div className="hidden sm:flex items-center gap-4 font-mono text-xs text-zinc-400">
+        <div className="hidden sm:flex items-center gap-3 font-mono text-xs text-zinc-400">
           <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded border border-zinc-800">
             <Compass className="w-3.5 h-3.5 text-amber-400" />
             <span>Victorias: <strong className="text-zinc-200">{playerStats.matches_won}</strong></span>
@@ -42,11 +44,24 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onSwitchView }) => 
           </div>
         </div>
 
-        {/* Selector de Modo (Juego / Studio) */}
+        {/* Selector de Modo (Juego / Tabla / Studio) */}
         <div className="flex items-center gap-2">
+          {onOpenLeaderboard && (
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                onOpenLeaderboard();
+              }}
+              title="Ver Tabla General de Récords"
+              className="flex items-center gap-1.5 px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-amber-400 rounded text-xs font-mono font-medium transition-colors cursor-pointer"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">RÉCORDS</span>
+            </button>
+          )}
           <button
             onClick={() => onSwitchView('GAME')}
-            className={`px-3 py-1 rounded text-xs font-mono font-medium transition-colors ${
+            className={`px-3 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer ${
               currentView === 'GAME'
                 ? 'bg-amber-500 text-zinc-950 font-bold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -56,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onSwitchView }) => 
           </button>
           <button
             onClick={() => onSwitchView('STUDIO')}
-            className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-mono font-medium transition-colors ${
+            className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer ${
               currentView === 'STUDIO'
                 ? 'bg-amber-500 text-zinc-950 font-bold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'

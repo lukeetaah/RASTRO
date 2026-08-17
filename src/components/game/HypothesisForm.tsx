@@ -3,8 +3,18 @@
 import React, { useState } from 'react';
 import { PlayerHypothesis } from '@/types/game';
 import { CanonicalEvidence } from '@/types/evidence';
-import { CANONICAL_EVIDENCES } from '@/data/canonical-evidences';
-import { Calendar, MapPin, Search, SendHorizontal, Check, ArrowRight } from 'lucide-react';
+import { useGameStore } from '@/store/game-store';
+import {
+  Calendar,
+  MapPin,
+  Search,
+  SendHorizontal,
+  Check,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Filter,
+} from 'lucide-react';
 import { soundFx } from '@/lib/sound';
 
 interface HypothesisFormProps {
@@ -18,11 +28,13 @@ interface HypothesisFormProps {
 const HISTORICAL_CITIES = [
   { city: 'Buenos Aires', country: 'Argentina', lat: -34.6037, lon: -58.3816 },
   { city: 'Córdoba', country: 'Argentina', lat: -31.4167, lon: -64.1833 },
+  { city: 'Mendoza', country: 'Argentina', lat: -32.8908, lon: -68.8272 },
   { city: 'Santiago', country: 'Chile', lat: -33.4429, lon: -70.6539 },
-  { city: 'Montevideo', country: 'Uruguay', lat: -34.9011, lon: -56.1645 },
   { city: 'Bruselas', country: 'Bélgica', lat: 50.8503, lon: 4.3517 },
   { city: 'Berlín', country: 'Alemania', lat: 52.5163, lon: 13.3777 },
-  { city: 'París', country: 'Francia', lat: 48.8566, lon: 2.3522 },
+  { city: 'Hiroshima', country: 'Japón', lat: 34.3853, lon: 132.4553 },
+  { city: 'Sarajevo', country: 'Bosnia', lat: 43.8563, lon: 18.4131 },
+  { city: 'Washington D.C.', country: 'EE.UU.', lat: 38.8893, lon: -77.0502 },
   { city: 'Mar de la Tranquilidad', country: 'Luna', lat: 0.674, lon: 23.472 },
   { city: 'Esclusas de Miraflores', country: 'Panamá', lat: 9.08, lon: -79.68 },
 ];
@@ -35,10 +47,23 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
   timeRemaining,
 }) => {
   const [activeTab, setActiveTab] = useState<'EVENT' | 'YEAR' | 'LOCATION'>('EVENT');
-  const currentYear = hypothesis.year || evidence.canonical_date.year;
+  const currentYear = hypothesis.year ?? 1950;
 
-  // Lista de eventos canónicos disponibles
-  const availableEvidences = CANONICAL_EVIDENCES;
+  const {
+    lifelinesRemaining,
+    eliminatedEventOptions,
+    decadeFilter,
+    useLifeline5050,
+    useLifelineDecade,
+  } = useGameStore();
+
+  // Opciones contextuales desafiantes (sin mostrar el año en el texto)
+  const eventOptions = evidence.distractor_events || [
+    'Acontecimiento Histórico A',
+    'Acontecimiento Histórico B',
+    evidence.canonical_event,
+    'Acontecimiento Histórico C',
+  ];
 
   const handleSelectYear = (year: number) => {
     soundFx.playClick();
@@ -56,17 +81,10 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     });
   };
 
-  // Al elegir acontecimiento, auto-configuramos inteligentemente año y ubicación sugerida
-  const handleSelectCanonicalEvent = (ev: CanonicalEvidence) => {
+  const handleSelectEvent = (eventName: string) => {
     soundFx.playClick();
     onUpdateHypothesis({
-      event_query: ev.canonical_event,
-      year: ev.canonical_date.year,
-      location: {
-        latitude: ev.canonical_location.latitude,
-        longitude: ev.canonical_location.longitude,
-        city: ev.canonical_location.city,
-      },
+      event_query: eventName,
     });
   };
 
@@ -75,11 +93,14 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     onSubmitVerdict();
   };
 
+  const minSliderYear = decadeFilter ? decadeFilter.min : 1800;
+  const maxSliderYear = decadeFilter ? decadeFilter.max : 2025;
+
   return (
     <div className="w-full bg-[#0f1218] border border-zinc-800/90 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-2xl">
-      {/* 1. Selector de Pestañas */}
+      {/* 1. Selector de Pestañas y Ayudas de Archivo */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
               soundFx.playClick();
@@ -92,7 +113,7 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
             }`}
           >
             <Search className="w-4 h-4" />
-            1. ELEGIR ACONTECIMIENTO
+            1. ACONTECIMIENTO
             {hypothesis.event_query && (
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
             )}
@@ -111,6 +132,11 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
           >
             <Calendar className="w-4 h-4" />
             2. AÑO ({currentYear})
+            {decadeFilter && (
+              <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-300">
+                Década activa
+              </span>
+            )}
           </button>
 
           <button
@@ -131,38 +157,81 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
             )}
           </button>
         </div>
+
+        {/* Barra de Ayudas de Archivo (2 por sesión de match) */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest hidden md:inline">
+            Ayudas ({lifelinesRemaining}/2):
+          </span>
+          <button
+            disabled={lifelinesRemaining <= 0 || eliminatedEventOptions.length > 0}
+            onClick={useLifeline5050}
+            title="Descartar 2 opciones falsas (consume 1 ayuda)"
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+              lifelinesRemaining > 0 && eliminatedEventOptions.length === 0
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 cursor-not-allowed'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>50:50</span>
+          </button>
+
+          <button
+            disabled={lifelinesRemaining <= 0 || decadeFilter !== null}
+            onClick={useLifelineDecade}
+            title="Filtrar rango de década histórica (consume 1 ayuda)"
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+              lifelinesRemaining > 0 && decadeFilter === null
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 cursor-not-allowed'
+            }`}
+          >
+            <Filter className="w-3.5 h-3.5 text-amber-400" />
+            <span>Década</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Contenido de la Pestaña */}
       <div className="min-h-[110px] flex flex-col justify-center">
-        {/* Pestaña ACONTECIMIENTO (Prioritaria) */}
+        {/* Pestaña ACONTECIMIENTO (Desafiante y Contextual) */}
         {activeTab === 'EVENT' && (
           <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
             <span className="text-xs font-mono text-zinc-400">
-              SELECCIONÁ EL ACONTECIMIENTO QUE IDENTIFICA A LA FOTOGRAFÍA:
+              SELECCIONÁ EL ACONTECIMIENTO HISTÓRICO EXACTO:
             </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              {availableEvidences.map((ev) => {
-                const isSelected = hypothesis.event_query === ev.canonical_event;
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {eventOptions.map((opt) => {
+                const isSelected = hypothesis.event_query === opt;
+                const isEliminated = eliminatedEventOptions.includes(opt);
+
+                if (isEliminated) {
+                  return (
+                    <div
+                      key={opt}
+                      className="p-3 rounded-xl border border-zinc-850 bg-zinc-950/40 text-zinc-600 text-left line-through opacity-40 select-none flex items-center justify-between text-xs font-mono"
+                    >
+                      <span>{opt}</span>
+                      <span className="text-[10px] text-red-500/60 uppercase">DESCARTADO</span>
+                    </div>
+                  );
+                }
+
                 return (
                   <button
-                    key={ev.id}
-                    onClick={() => handleSelectCanonicalEvent(ev)}
-                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                    key={opt}
+                    onClick={() => handleSelectEvent(opt)}
+                    className={`p-3 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-lg ring-2 ring-amber-500/30'
                         : 'bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:bg-zinc-850'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-amber-400 font-bold">
-                        {ev.canonical_date.year} • {ev.thematic_category}
-                      </span>
-                      {isSelected && <Check className="w-4 h-4 text-emerald-400 font-bold" />}
-                    </div>
                     <span className="font-mono text-xs font-bold leading-snug">
-                      {ev.canonical_event}
+                      {opt}
                     </span>
+                    {isSelected && <Check className="w-4 h-4 text-emerald-400 font-bold shrink-0" />}
                   </button>
                 );
               })}
@@ -175,7 +244,9 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
           <div className="flex flex-col gap-3 animate-in fade-in duration-150">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono text-zinc-400">
-                AJUSTÁ EL AÑO HISTÓRICO:
+                {decadeFilter
+                  ? `FILTRO DE DÉCADA: ${decadeFilter.min} - ${decadeFilter.max}`
+                  : 'AJUSTÁ EL AÑO HISTÓRICO:'}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-zinc-400">AÑO ELEGIDO:</span>
@@ -187,23 +258,23 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
 
             <input
               type="range"
-              min={1800}
-              max={2025}
+              min={minSliderYear}
+              max={maxSliderYear}
               step={1}
-              value={currentYear}
+              value={Math.max(minSliderYear, Math.min(maxSliderYear, currentYear))}
               onChange={(e) => handleSelectYear(parseInt(e.target.value, 10))}
               className="w-full h-3 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
 
             <div className="flex flex-wrap gap-1.5 pt-1">
               <span className="text-[11px] font-mono text-zinc-400 self-center mr-1">
-                Atajos:
+                Atajos de época:
               </span>
-              {[1810, 1910, 1914, 1927, 1936, 1945, 1969, 1973, 1989].map((year) => (
+              {[1810, 1850, 1910, 1920, 1930, 1945, 1960, 1970, 1989, 2000].map((year) => (
                 <button
                   key={year}
                   onClick={() => handleSelectYear(year)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
                     currentYear === year
                       ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md scale-105'
                       : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700'
@@ -222,7 +293,7 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
             <span className="text-xs font-mono text-zinc-400">
               CIUDAD O REGIÓN HISTÓRICA:
             </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {HISTORICAL_CITIES.map((c) => {
                 const isSelected = hypothesis.location?.city === c.city;
                 return (

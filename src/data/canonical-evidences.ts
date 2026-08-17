@@ -23,6 +23,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Obelisco de Buenos Aires',
       'IV Centenario de Buenos Aires'
     ],
+    distractor_events: [
+      'Inauguración del Edificio Kavanagh',
+      'Construcción del Puente Alsina',
+      'Apertura del Ensanche de Av. Corrientes',
+      'Inauguración del Obelisco de Buenos Aires'
+    ],
     precision_required: 'EVENT_AND_YEAR',
     canonical_date: {
       year: 1936,
@@ -100,6 +106,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Cabildo Abierto de 1810',
       'Cabildo Abierto del 22 de Mayo',
       'Semana de Mayo'
+    ],
+    distractor_events: [
+      'Jura de la Constitución de 1853',
+      'Declaración de la Independencia en Tucumán',
+      'Invasiones Inglesas al Río de la Plata',
+      'Cabildo Abierto del 22 de Mayo de 1810'
     ],
     precision_required: 'EXACT_DATE',
     canonical_date: {
@@ -179,6 +191,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Expedición Libertadora a Chile',
       'Ejército de los Andes'
     ],
+    distractor_events: [
+      'Batalla de San Lorenzo',
+      'El Cruce de los Andes del General San Martín',
+      'Batalla de Maipú',
+      'Éxodo Jujeño y Batalla de Salta'
+    ],
     precision_required: 'EVENT_AND_YEAR',
     canonical_date: {
       year: 1817,
@@ -256,6 +274,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Debate Bohr-Einstein en Bruselas',
       'Congreso Solvay sobre Electrones y Fotones',
       'Conferencia Solvay'
+    ],
+    distractor_events: [
+      'Conferencia de Física Cuántica de Copenhague',
+      'Premio Nobel de Física a Einstein y Planck',
+      'Quinta Conferencia Solvay',
+      'Primer Congreso Internacional de Radiología'
     ],
     precision_required: 'EVENT_AND_YEAR',
     canonical_date: {
@@ -335,6 +359,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Alunizaje del Apolo 11',
       'Paseo lunar de Neil Armstrong y Buzz Aldrin'
     ],
+    distractor_events: [
+      'Misión Apolo 8 orbitando la Luna',
+      'Primer Alunizaje del Apolo 11',
+      'Lanzamiento del Sputnik 1',
+      'Primera caminata espacial del Gemini 4'
+    ],
     precision_required: 'EXACT_DATE',
     canonical_date: {
       year: 1969,
@@ -411,6 +441,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Apertura del Muro de Berlín',
       'Mauerfall',
       'Fin del Muro de Berlín'
+    ],
+    distractor_events: [
+      'Revolución de Terciopelo en Praga',
+      'Construcción del Muro de Berlín en 1961',
+      'Caída del Muro de Berlín',
+      'Protestas de la Plaza de Tiananmén'
     ],
     precision_required: 'EVENT_AND_YEAR',
     canonical_date: {
@@ -489,6 +525,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Ataque nuclear a Hiroshima',
       'Little Boy en Hiroshima'
     ],
+    distractor_events: [
+      'Bombardeo de Dresde',
+      'Bombardeo Atómico de Hiroshima',
+      'Prueba Nuclear Trinity en Los Álamos',
+      'Bombardeo de Pearl Harbor'
+    ],
     precision_required: 'EXACT_DATE',
     canonical_date: {
       year: 1945,
@@ -565,6 +607,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Asesinato del Archiduque Francisco Fernando',
       'Atentado de Sarajevo de 1914',
       'Detonante de la Primera Guerra Mundial'
+    ],
+    distractor_events: [
+      'Firma del Tratado de Versalles',
+      'Atentado de Sarajevo',
+      'Batalla de Verdún',
+      'Crisis diplomática de Agadir'
     ],
     precision_required: 'EXACT_DATE',
     canonical_date: {
@@ -644,6 +692,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'I Have a Dream',
       'Marcha por los Derechos Civiles de 1963'
     ],
+    distractor_events: [
+      'Marchas de Selma a Montgomery',
+      'Discurso «I Have a Dream» de Martin Luther King',
+      'Boicot de Autobuses de Montgomery',
+      'Firma de la Ley de Derechos Civiles de 1964'
+    ],
     precision_required: 'EXACT_DATE',
     canonical_date: {
       year: 1963,
@@ -722,6 +776,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'El Cordobazo',
       'Jornadas del 29 y 30 de mayo de 1969'
     ],
+    distractor_events: [
+      'El Rosariazo de mayo de 1969',
+      'El Cordobazo',
+      'La Noche de los Bastones Largos (1966)',
+      'El Viborazo en Córdoba (1971)'
+    ],
     precision_required: 'EVENT_AND_YEAR',
     canonical_date: {
       year: 1969,
@@ -791,6 +851,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Golpe Militar en Chile',
       'Caída de Salvador Allende'
     ],
+    distractor_events: [
+      'El Tanquetazo en Santiago',
+      'Golpe de Estado y Bombardeo a La Moneda',
+      'Plebiscito Nacional de Chile de 1988',
+      'Nacionalización de la Gran Minería del Cobre'
+    ],
     precision_required: 'EXACT_DATE',
     canonical_date: {
       year: 1973,
@@ -858,6 +924,12 @@ export const CANONICAL_EVIDENCES: CanonicalEvidence[] = [
       'Paso inaugural del vapor Ancón',
       'Apertura del Canal de Panamá',
       'Inauguración del Canal de Panamá de 1914'
+    ],
+    distractor_events: [
+      'Tratado Hay-Bunau Varilla',
+      'Construcción del Ferrocarril Transístmico de Panamá',
+      'Inauguración del Canal de Panamá',
+      'Apertura del Canal de Suez en Egipto'
     ],
     precision_required: 'EVENT_AND_YEAR',
     canonical_date: {

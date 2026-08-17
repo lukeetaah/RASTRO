@@ -9,7 +9,8 @@ export const GamePhaseSchema = z.enum([
   'INVESTIGATING',
   'SUBMITTING',
   'ROUND_RESOLVING',
-  'POST_ROUND_ARCHIVE'
+  'POST_ROUND_ARCHIVE',
+  'MATCH_OVER'
 ]);
 export type GamePhase = z.infer<typeof GamePhaseSchema>;
 
@@ -60,6 +61,7 @@ export interface ScoreBreakdown {
 }
 
 export interface RoundResult {
+  round_number: number;
   player_score: ScoreBreakdown;
   rival_score: ScoreBreakdown;
   winner: 'PLAYER' | 'RIVAL' | 'TIE';
@@ -68,6 +70,26 @@ export interface RoundResult {
   rival_hypothesis: PlayerHypothesis;
   player_clues_used: string[];
   rival_clues_used: string[];
+}
+
+export interface MatchSummary {
+  player_total_score: number;
+  rival_total_score: number;
+  player_rounds_won: number;
+  rival_rounds_won: number;
+  winner: 'PLAYER' | 'RIVAL' | 'TIE';
+  rival: RivalState;
+  round_history: RoundResult[];
+  completed_at: string;
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  player_name: string;
+  total_score: number;
+  rounds_won: number;
+  rival_name: string;
+  date: string;
 }
 
 export interface PlayerStats {

@@ -4,42 +4,66 @@ import React, { useState } from 'react';
 import { RoundResult } from '@/types/game';
 import { DeepZoomViewer } from '@/components/canvas/DeepZoomViewer';
 import { ClueModal } from '@/components/game/ClueModal';
+import { useGameStore } from '@/store/game-store';
 import {
   Trophy,
   Award,
   ArrowRight,
-  RotateCcw,
   BookOpen,
   MapPin,
   Calendar,
   Sparkles,
-  ExternalLink,
-  ShieldAlert,
+  Swords,
 } from 'lucide-react';
 import { VisualClue } from '@/types/evidence';
 
 interface PostRoundArchiveProps {
   result: RoundResult;
   winStreak?: number;
-  onPlayAgain: () => void;
+  onNext: () => void;
   onBackToMenu: () => void;
 }
 
 export const PostRoundArchive: React.FC<PostRoundArchiveProps> = ({
   result,
   winStreak = 0,
-  onPlayAgain,
+  onNext,
   onBackToMenu,
 }) => {
   const { evidence, player_score, rival_score, winner, player_clues_used } = result;
+  const { roundNumber, maxRounds, roundHistory, rival } = useGameStore();
   const [selectedClue, setSelectedClue] = useState<VisualClue | null>(null);
 
   const isPlayerWinner = winner === 'PLAYER';
   const isTie = winner === 'TIE';
 
+  const playerRoundsWon = roundHistory.filter((r) => r.winner === 'PLAYER').length;
+  const rivalRoundsWon = roundHistory.filter((r) => r.winner === 'RIVAL').length;
+  const isLastRound = roundNumber >= maxRounds;
+
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 py-4 animate-in fade-in duration-300">
-      {/* Banner de Resultado de Ronda */}
+      {/* 1. Header de Estado del Match */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800 px-5 py-3 rounded-xl font-mono text-xs">
+        <div className="flex items-center gap-2">
+          <Swords className="w-4 h-4 text-amber-400" />
+          <span className="text-zinc-400">DUELO HISTÓRICO 1v1:</span>
+          <span className="font-bold text-amber-400 bg-zinc-950 px-2.5 py-1 rounded border border-amber-500/30">
+            RONDA {roundNumber} DE {maxRounds}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-zinc-400">Marcador del Duelo:</span>
+          <div className="flex items-center gap-2 font-bold text-sm">
+            <span className="text-amber-400">Tú: {playerRoundsWon}</span>
+            <span className="text-zinc-600">-</span>
+            <span className="text-zinc-300">{rival?.name || 'Rival'}: {rivalRoundsWon}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Banner de Resultado de la Ronda */}
       <div
         className={`w-full p-6 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl ${
           isPlayerWinner
@@ -69,14 +93,14 @@ export const PostRoundArchive: React.FC<PostRoundArchiveProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs uppercase tracking-widest text-zinc-400">
                 {isPlayerWinner
-                  ? 'VICTORIA POR DEDUCCIÓN'
+                  ? 'VICTORIA DE RONDA'
                   : isTie
-                  ? 'EMPATE TÁCTICO'
-                  : 'VICTORIA DEL RIVAL'}
+                  ? 'EMPATE EN LA RONDA'
+                  : 'RONDA PARA EL RIVAL'}
               </span>
               {isPlayerWinner && winStreak >= 2 && (
                 <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-300 text-[10px] font-mono font-bold">
-                  🔥 RACHA: {winStreak} SEGUIDAS
+                  🔥 RACHA: {winStreak}
                 </span>
               )}
             </div>
@@ -221,15 +245,15 @@ export const PostRoundArchive: React.FC<PostRoundArchiveProps> = ({
       <div className="flex justify-end gap-3 pt-2">
         <button
           onClick={onBackToMenu}
-          className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-mono text-xs font-semibold transition-colors"
+          className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-mono text-xs font-semibold transition-colors cursor-pointer"
         >
-          VOLVER AL LOBBY
+          ABANDONAR DUELO
         </button>
         <button
-          onClick={onPlayAgain}
-          className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-mono text-xs font-bold tracking-wider shadow-lg hover:shadow-amber-500/20 transition-all"
+          onClick={onNext}
+          className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-xl font-mono text-xs font-black tracking-wider shadow-lg hover:shadow-amber-500/25 transition-all cursor-pointer"
         >
-          SIGUIENTE RONDA 1v1
+          <span>{isLastRound ? 'VER RESULTADO FINAL DEL DUELO' : `SIGUIENTE RONDA (${roundNumber + 1}/${maxRounds})`}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

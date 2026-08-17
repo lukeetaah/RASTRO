@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { VisualClue } from '@/types/evidence';
-import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Focus } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Focus, AlertTriangle } from 'lucide-react';
 import { soundFx } from '@/lib/sound';
 
 interface DeepZoomViewerProps {
@@ -27,11 +27,15 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredClueId, setHoveredClueId] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Reiniciar encuadre al cambiar de imagen
   useEffect(() => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
+    setIsLoaded(false);
+    setHasError(false);
   }, [imageUrl]);
 
   const resetZoom = useCallback(() => {
@@ -175,6 +179,21 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
         </div>
       </div>
 
+      {/* Spinner de Carga */}
+      {!isLoaded && !hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950 z-10">
+          <div className="w-10 h-10 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin" />
+        </div>
+      )}
+
+      {/* Error Fallback */}
+      {hasError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-400 z-10 p-4 text-center">
+          <AlertTriangle className="w-8 h-8 text-amber-500" />
+          <span className="font-mono text-xs">Error cargando archivo fotográfico</span>
+        </div>
+      )}
+
       {/* Contenedor Interactivo con Zoom y Paneo */}
       <div
         onMouseDown={handleMouseDown}
@@ -198,52 +217,55 @@ export const DeepZoomViewer: React.FC<DeepZoomViewerProps> = ({
             alt="Evidencia Histórica Real"
             referrerPolicy="no-referrer"
             draggable={false}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
             className="max-h-[58vh] max-w-[85vw] object-contain rounded-lg shadow-2xl select-none"
           />
 
           {/* Hotspots de Pistas Visuales Directas */}
-          {clues.map((clue, idx) => {
-            const isRevealed = revealedClueIds.includes(clue.id);
-            const isHovered = hoveredClueId === clue.id;
-            const rect = clue.normalized_rect;
+          {isLoaded &&
+            clues.map((clue, idx) => {
+              const isRevealed = revealedClueIds.includes(clue.id);
+              const isHovered = hoveredClueId === clue.id;
+              const rect = clue.normalized_rect;
 
-            return (
-              <div
-                key={clue.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  focusOnClue(clue);
-                }}
-                onMouseEnter={() => setHoveredClueId(clue.id)}
-                onMouseLeave={() => setHoveredClueId(null)}
-                style={{
-                  left: `${rect.x * 100}%`,
-                  top: `${rect.y * 100}%`,
-                  width: `${rect.width * 100}%`,
-                  height: `${rect.height * 100}%`,
-                }}
-                className={`absolute rounded-lg cursor-pointer transition-all duration-200 flex items-center justify-center group ${
-                  isRevealed
-                    ? 'border-2 border-emerald-400 bg-emerald-950/40'
-                    : isHovered
-                    ? 'border-2 border-amber-300 bg-amber-500/35 ring-4 ring-amber-500/25'
-                    : 'border-2 border-amber-400/90 bg-amber-500/15 hover:border-amber-300 hover:bg-amber-500/30 animate-pulse hover:animate-none'
-                }`}
-              >
-                {/* Etiqueta Flotante sobre la Zona */}
+              return (
                 <div
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold shadow-lg transition-transform group-hover:scale-105 flex items-center gap-1 ${
+                  key={clue.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    focusOnClue(clue);
+                  }}
+                  onMouseEnter={() => setHoveredClueId(clue.id)}
+                  onMouseLeave={() => setHoveredClueId(null)}
+                  style={{
+                    left: `${rect.x * 100}%`,
+                    top: `${rect.y * 100}%`,
+                    width: `${rect.width * 100}%`,
+                    height: `${rect.height * 100}%`,
+                  }}
+                  className={`absolute rounded-lg cursor-pointer transition-all duration-200 flex items-center justify-center group ${
                     isRevealed
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-amber-500 text-zinc-950'
+                      ? 'border-2 border-emerald-400 bg-emerald-950/40'
+                      : isHovered
+                      ? 'border-2 border-amber-300 bg-amber-500/35 ring-4 ring-amber-500/25'
+                      : 'border-2 border-amber-400/90 bg-amber-500/15 hover:border-amber-300 hover:bg-amber-500/30 animate-pulse hover:animate-none'
                   }`}
                 >
-                  <span>#{idx + 1}</span>
-                  <span>{isRevealed ? '✓ REVELADA' : clue.title}</span>
+                  {/* Etiqueta Flotante sobre la Zona */}
+                  <div
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold shadow-lg transition-transform group-hover:scale-105 flex items-center gap-1 ${
+                      isRevealed
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-amber-500 text-zinc-950'
+                    }`}
+                  >
+                    <span>#{idx + 1}</span>
+                    <span>{isRevealed ? '✓ REVELADA' : clue.title}</span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
     </div>

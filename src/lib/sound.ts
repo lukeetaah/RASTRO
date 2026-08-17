@@ -1,10 +1,14 @@
 // Sound Effects Generator usando Web Audio API nativo (cero dependencias externas)
 class SoundFX {
   private ctx: AudioContext | null = null;
+  private lastHeartbeatTime = 0;
 
   private init() {
     if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
@@ -30,6 +34,87 @@ class SoundFX {
       gain.connect(this.ctx.destination);
       osc.start();
       osc.stop(this.ctx.currentTime + 0.04);
+    } catch (_) {}
+  }
+
+  // Tick de urgencia cuando queda poco tiempo
+  playUrgentTick() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, now);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch (_) {}
+  }
+
+  // Latido cardíaco (lub-dub) de tensión creciente
+  playHeartbeat(intensity: 'low' | 'medium' | 'high' | 'critical' = 'low') {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      if (now - this.lastHeartbeatTime < 0.3) return;
+      this.lastHeartbeatTime = now;
+
+      const baseFreq = intensity === 'critical' ? 75 : intensity === 'high' ? 65 : 55;
+      const gainVol = intensity === 'critical' ? 0.35 : intensity === 'high' ? 0.25 : 0.15;
+
+      // Primer golpe (Lub)
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(baseFreq, now);
+      osc1.frequency.exponentialRampToValueAtTime(30, now + 0.08);
+      gain1.gain.setValueAtTime(gainVol, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc1.connect(gain1);
+      gain1.connect(this.ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.08);
+
+      // Segundo golpe (Dub)
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(baseFreq * 0.9, now + 0.12);
+      osc2.frequency.exponentialRampToValueAtTime(25, now + 0.22);
+      gain2.gain.setValueAtTime(gainVol * 0.8, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.22);
+    } catch (_) {}
+  }
+
+  // Sonido de pista / ayuda activada (Lifeline)
+  playLifeline() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      [350, 440, 587.33, 880].forEach((freq, i) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.06);
+        gain.gain.setValueAtTime(0.18, now + i * 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + i * 0.06);
+        osc.stop(now + i * 0.06 + 0.3);
+      });
     } catch (_) {}
   }
 
@@ -116,25 +201,6 @@ class SoundFX {
         osc.start(now + i * 0.15);
         osc.stop(now + i * 0.15 + 0.4);
       });
-    } catch (_) {}
-  }
-
-  // Tick de urgencia cuando queda poco tiempo
-  playUrgentTick() {
-    try {
-      this.init();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(1200, now);
-      gain.gain.setValueAtTime(0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.03);
     } catch (_) {}
   }
 

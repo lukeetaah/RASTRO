@@ -9,6 +9,8 @@ import { RivalStatus } from '@/components/game/RivalStatus';
 import { HypothesisForm } from '@/components/game/HypothesisForm';
 import { ClueModal } from '@/components/game/ClueModal';
 import { PostRoundArchive } from '@/components/game/PostRoundArchive';
+import { MatchSummaryModal } from '@/components/game/MatchSummaryModal';
+import { LeaderboardModal } from '@/components/game/LeaderboardModal';
 import { BackofficeStudio } from '@/components/studio/Backoffice';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -28,10 +30,13 @@ export default function RastroApp() {
   const [currentView, setCurrentView] = useState<'GAME' | 'STUDIO'>('GAME');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [winStreak, setWinStreak] = useState(0);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const lastRivalLockedRef = useRef(false);
 
   const {
     phase,
+    roundNumber,
+    maxRounds,
     currentEvidence,
     timeRemainingSeconds,
     totalTimeSeconds,
@@ -43,6 +48,8 @@ export default function RastroApp() {
     playerStats,
     startMatchmaking,
     startRound,
+    nextRoundOrFinishMatch,
+    startRematch,
     tickTimer,
     inspectClue,
     setSelectedClueModal,
@@ -127,11 +134,20 @@ export default function RastroApp() {
     (c) => c.id === selectedClueModalId
   ) || null;
 
-  const urgencyClass = timeRemainingSeconds <= 15 ? 'border-red-500/40' : timeRemainingSeconds <= 30 ? 'border-amber-500/30' : 'border-zinc-800';
+  const urgencyClass =
+    timeRemainingSeconds <= 15
+      ? 'border-red-500/40'
+      : timeRemainingSeconds <= 30
+      ? 'border-amber-500/30'
+      : 'border-zinc-800';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#090b0e] text-zinc-100">
-      <Navbar currentView={currentView} onSwitchView={setCurrentView} />
+      <Navbar
+        currentView={currentView}
+        onSwitchView={setCurrentView}
+        onOpenLeaderboard={() => setShowLeaderboard(true)}
+      />
 
       <main className="flex-1 flex flex-col max-w-6xl w-full mx-auto p-3 sm:p-6">
         {currentView === 'STUDIO' ? (
@@ -151,7 +167,7 @@ export default function RastroApp() {
                 >
                   <div className="flex flex-col items-center gap-4">
                     <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs font-semibold tracking-widest uppercase">
-                      Motor de Investigación Histórica 1v1
+                      Duelo de Investigación Histórica 1v1 · 5 Rondas
                     </span>
                     <h1 className="text-4xl sm:text-5xl font-serif font-black tracking-tight text-zinc-100 leading-tight">
                       La historia no es una trivia.
@@ -161,30 +177,36 @@ export default function RastroApp() {
                       </span>
                     </h1>
                     <p className="text-sm text-zinc-400 font-sans leading-relaxed max-w-lg">
-                      Dos investigadores reciben la misma fotografía histórica real.
-                      Observá con lupa, deducí el acontecimiento y competí contra un reloj de arena de 90 segundos.
+                      Competí en un match de 5 rondas a tiempo decreciente.
+                      Observá fotografías de archivo, identificá vestigios y superá a tu rival antes de que se agote la arena.
                     </p>
                   </div>
 
-                  {/* Estadísticas del jugador */}
-                  {playerStats.matches_played > 0 && (
-                    <div className="flex items-center gap-4 text-xs font-mono">
-                      <div className="flex items-center gap-1.5 bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800">
-                        <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-zinc-300">{playerStats.matches_won}/{playerStats.matches_played}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800">
-                        <Flame className="w-3.5 h-3.5 text-orange-400" />
-                        <span className="text-zinc-300">{playerStats.total_score.toLocaleString()} pts</span>
-                      </div>
-                      {winStreak >= 2 && (
-                        <div className="flex items-center gap-1.5 bg-amber-500/15 px-3 py-1.5 rounded-lg border border-amber-500/40">
-                          <Zap className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="text-amber-300 font-bold">Racha: {winStreak}🔥</span>
+                  {/* Estadísticas del jugador y accesos */}
+                  <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-mono">
+                    <button
+                      onClick={() => setShowLeaderboard(true)}
+                      className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-zinc-800 border border-amber-500/40 text-amber-300 px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer shadow-md"
+                    >
+                      <Trophy className="w-4 h-4 text-amber-400" />
+                      <span>Cuadro de Honor / Récords</span>
+                    </button>
+
+                    {playerStats.matches_played > 0 && (
+                      <>
+                        <div className="flex items-center gap-1.5 bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800">
+                          <span className="text-zinc-400">Victorias:</span>
+                          <span className="text-zinc-200 font-bold">{playerStats.matches_won}</span>
                         </div>
-                      )}
-                    </div>
-                  )}
+                        {winStreak >= 2 && (
+                          <div className="flex items-center gap-1.5 bg-amber-500/15 px-3 py-1.5 rounded-lg border border-amber-500/40">
+                            <Zap className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-amber-300 font-bold">Racha: {winStreak}🔥</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
 
                   {/* Botón Principal de Matchmaking */}
                   <motion.button
@@ -197,7 +219,7 @@ export default function RastroApp() {
                     className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 rounded-xl font-mono text-sm font-black tracking-wider shadow-2xl shadow-amber-500/30 transition-colors cursor-pointer"
                   >
                     <Swords className="w-5 h-5" />
-                    INICIAR DUELO HISTÓRICO 1v1
+                    INICIAR DUELO (5 RONDAS)
                   </motion.button>
 
                   {/* Pilares del Juego */}
@@ -212,22 +234,22 @@ export default function RastroApp() {
                     <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
-                        2. Riesgo vs Tiempo
+                        2. Dificultad Creciente
                       </span>
-                      Pedir una pista histórica drena arena de tu reloj.
+                      El tiempo disminuye por ronda (75s → 60s → 50s → 40s → 30s).
                     </div>
                     <div className="p-3.5 bg-zinc-900/60 rounded-lg border border-zinc-800 flex flex-col gap-1">
                       <span className="text-amber-400 font-bold flex items-center gap-1.5">
                         <Swords className="w-3.5 h-3.5" />
-                        3. Tensión 1v1
+                        3. Match a 5 Rondas
                       </span>
-                      Descubrí si tu rival arriesgó rápido o dudó hasta el final.
+                      Sumá puntos, vencé a tu rival y disputá la revancha directa.
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>12 evidencias históricas auténticas · Fotografías de archivo verificadas</span>
+                    <span>Fotografías de archivo verificadas (AGN, NASA, NARA, Europeana)</span>
                   </div>
                 </motion.div>
               )}
@@ -254,7 +276,7 @@ export default function RastroApp() {
                       Buscando Rival en el Archivo...
                     </h2>
                     <p className="text-xs font-mono text-zinc-500">
-                      Sincronizando reloj y seleccionando evidencia canónica
+                      Preparando baraja de 5 evidencias y sincronizando cronómetros
                     </p>
                   </div>
                 </motion.div>
@@ -284,7 +306,7 @@ export default function RastroApp() {
                       </motion.div>
                       <div className="flex flex-col gap-1">
                         <span className="font-mono text-xs text-emerald-400 font-bold uppercase tracking-widest">
-                          ¡DUELO EMPAREJADO!
+                          ¡DUELO EMPAREJADO (MATCH A 5 RONDAS)!
                         </span>
                         <h2 className="text-2xl font-serif font-bold text-zinc-100">
                           Tú vs {rival.name}
@@ -298,9 +320,11 @@ export default function RastroApp() {
 
                   {phase === 'ROUND_START' && countdown !== null && (
                     <div className="flex flex-col items-center gap-4">
-                      <span className="font-mono text-xs text-amber-400 uppercase tracking-widest font-bold">
-                        PREPARATE PARA INVESTIGAR
-                      </span>
+                      <div className="flex items-center gap-2 font-mono text-xs text-amber-400 uppercase tracking-widest font-bold bg-zinc-950 px-3 py-1 rounded-full border border-amber-500/40">
+                        <span>RONDA {roundNumber} DE {maxRounds}</span>
+                        <span>•</span>
+                        <span>{totalTimeSeconds} SEGUNDOS</span>
+                      </div>
                       <motion.div
                         key={countdown}
                         initial={{ scale: 2.5, opacity: 0 }}
@@ -332,11 +356,13 @@ export default function RastroApp() {
                   transition={{ duration: 0.35 }}
                   className="flex-1 flex flex-col gap-3"
                 >
-                  {/* Banner de Misión + Racha */}
-                  <div className={`flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border rounded-lg px-4 py-2 text-xs font-mono transition-colors ${urgencyClass}`}>
+                  {/* Banner de Misión + Ronda Activa */}
+                  <div
+                    className={`flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border rounded-lg px-4 py-2 text-xs font-mono transition-colors ${urgencyClass}`}
+                  >
                     <div className="flex items-center gap-2 text-amber-300 font-bold">
                       <Target className="w-4 h-4 text-amber-400" />
-                      <span>IDENTIFICÁ EL ACONTECIMIENTO Y EL AÑO</span>
+                      <span>RONDA {roundNumber}/5 · IDENTIFICÁ EL ACONTECIMIENTO Y EL AÑO</span>
                       {winStreak >= 2 && (
                         <span className="ml-2 px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-300 text-[10px] font-bold">
                           🔥 Racha: {winStreak}
@@ -353,7 +379,9 @@ export default function RastroApp() {
                   </div>
 
                   {/* Barra Superior de Estado y Tensión */}
-                  <div className={`grid grid-cols-12 gap-3 items-center bg-[#0e1117] border rounded-xl p-3 shadow-lg transition-colors ${urgencyClass}`}>
+                  <div
+                    className={`grid grid-cols-12 gap-3 items-center bg-[#0e1117] border rounded-xl p-3 shadow-lg transition-colors ${urgencyClass}`}
+                  >
                     {/* Rival 1v1 */}
                     <div className="col-span-8 md:col-span-9">
                       <RivalStatus rival={rival} timeRemaining={timeRemainingSeconds} />
@@ -378,7 +406,7 @@ export default function RastroApp() {
                     />
                   </div>
 
-                  {/* Formulario de Hipótesis (Año / Evento / Ubicación) */}
+                  {/* Formulario de Hipótesis (Año / Evento / Ubicación / Ayudas) */}
                   <HypothesisForm
                     evidence={currentEvidence}
                     hypothesis={playerHypothesis}
@@ -423,7 +451,7 @@ export default function RastroApp() {
               )}
             </AnimatePresence>
 
-            {/* 6. POST-RONDA Y ARCHIVO */}
+            {/* 6. POST-RONDA INTERMEDIA */}
             <AnimatePresence mode="wait">
               {phase === 'POST_ROUND_ARCHIVE' && roundResult && (
                 <motion.div
@@ -435,9 +463,9 @@ export default function RastroApp() {
                   <PostRoundArchive
                     result={roundResult}
                     winStreak={winStreak}
-                    onPlayAgain={() => {
+                    onNext={() => {
                       soundFx.playClick();
-                      startRound();
+                      nextRoundOrFinishMatch();
                     }}
                     onBackToMenu={() => {
                       soundFx.playClick();
@@ -447,6 +475,35 @@ export default function RastroApp() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* 7. RESUMEN FINAL DEL DUELO (MATCH OVER) */}
+            <AnimatePresence mode="wait">
+              {phase === 'MATCH_OVER' && (
+                <motion.div
+                  key="matchover"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <MatchSummaryModal
+                    onRematch={() => {
+                      soundFx.playClick();
+                      startRematch();
+                    }}
+                    onViewLeaderboard={() => setShowLeaderboard(true)}
+                    onBackToLobby={() => {
+                      soundFx.playClick();
+                      resetToLobby();
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Modal de Tabla General / Leaderboard */}
+            {showLeaderboard && (
+              <LeaderboardModal onClose={() => setShowLeaderboard(false)} />
+            )}
           </>
         )}
       </main>
