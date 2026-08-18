@@ -51,16 +51,20 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
     lifelinesRemaining,
     eliminatedEventOptions,
     decadeFilter,
+    currentRoundOptions,
     useLifeline5050,
     useLifelineDecade,
   } = useGameStore();
 
-  const eventOptions = evidence.distractor_events || [
-    'Acontecimiento Histórico A',
-    'Acontecimiento Histórico B',
-    evidence.canonical_event,
-    'Acontecimiento Histórico C',
-  ];
+  const eventOptions =
+    currentRoundOptions.length > 0
+      ? currentRoundOptions.map((opt) => opt.canonical_event)
+      : evidence.distractor_events || [
+          evidence.canonical_event,
+          'Acontecimiento Histórico A',
+          'Acontecimiento Histórico B',
+          'Acontecimiento Histórico C',
+        ];
 
   const handleSelectYear = (year: number) => {
     soundFx.playClick();
@@ -80,14 +84,22 @@ export const HypothesisForm: React.FC<HypothesisFormProps> = ({
 
   const handleSelectEvent = (eventName: string) => {
     soundFx.playClick();
-    if (eventName.toLowerCase().trim() === evidence.canonical_event.toLowerCase().trim()) {
+    const matched =
+      currentRoundOptions.find(
+        (opt) => opt.canonical_event.toLowerCase().trim() === eventName.toLowerCase().trim()
+      ) ||
+      (eventName.toLowerCase().trim() === evidence.canonical_event.toLowerCase().trim()
+        ? evidence
+        : undefined);
+
+    if (matched) {
       onUpdateHypothesis({
         event_query: eventName,
-        year: evidence.canonical_date.year,
+        year: matched.canonical_date.year,
         location: {
-          latitude: evidence.canonical_location.latitude,
-          longitude: evidence.canonical_location.longitude,
-          city: evidence.canonical_location.city,
+          latitude: matched.canonical_location.latitude,
+          longitude: matched.canonical_location.longitude,
+          city: matched.canonical_location.city,
         },
       });
     } else {

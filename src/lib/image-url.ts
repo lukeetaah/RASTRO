@@ -1,9 +1,10 @@
 // Helper para optimizar y garantizar la carga de imágenes históricas sin bloqueos ni fallas de doble codificación
 export function getOptimizedImageUrl(rawUrl: string, width = 1600): string {
   if (!rawUrl) return '';
+  if (rawUrl.startsWith('/')) return rawUrl;
 
   try {
-    // Si ya es una URL con protocolo, limpiamos decodificando primero para evitar el bug de doble escape (%2528)
+    // Si ya es una URL con protocolo, limpiamos decodificando primero para evitar el bug de doble escape
     const urlWithoutProto = rawUrl.replace(/^https?:\/\//, '');
     let cleanDecoded = urlWithoutProto;
     try {

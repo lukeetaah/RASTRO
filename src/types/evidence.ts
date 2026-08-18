@@ -100,6 +100,15 @@ export const CanonicalEvidenceSchema = z.object({
   // Sistema de Investigación
   visual_clues: z.array(VisualClueSchema),
   distractor_events: z.array(z.string()).optional(),
+  distractor_cards: z.array(z.string()).optional(),
+  distractor_profiles: z.array(z.object({
+    event_name: z.string(),
+    image_url: z.string(),
+    year: z.number(),
+    location: z.string(),
+    context_brief: z.string(),
+    why_not_correct: z.string(),
+  })).optional(),
   
   // Validación Histórica
   editorial_status: EditorialStatusSchema,
@@ -111,3 +120,5 @@ export const CanonicalEvidenceSchema = z.object({
   verified_at: z.string(),
 });
 export type CanonicalEvidence = z.infer<typeof CanonicalEvidenceSchema>;
+
+export type DistractorProfile = NonNullable<CanonicalEvidence['distractor_profiles']>[number];

@@ -75,6 +75,8 @@ export interface RoundResult {
   rival_clues_used: string[];
   rival_lock_seconds_ahead?: number;
   rival_advantage_reason?: string;
+  round_options?: CanonicalEvidence[];
+  selected_evidence?: CanonicalEvidence;
 }
 
 export interface MatchSummary {

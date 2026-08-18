@@ -206,7 +206,7 @@ export default function RastroApp() {
                       </span>
                     </h1>
                     <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed max-w-lg">
-                      19 evidencias fotográficas icónicas de dominio público (AGN, NASA, NARA, Europeana). Identificá el acontecimiento y superá a tu rival en un blitz rápido.
+                      57 evidencias fotográficas reales de dominio público (AGN, NASA, NARA, Europeana, Library of Congress). Deducción visual, opciones dinámicas e investigación forense en tiempo real.
                     </p>
                   </div>
 

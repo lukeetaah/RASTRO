@@ -9,7 +9,12 @@ import {
   MatchSummary,
   LeaderboardEntry,
 } from '@/types/game';
-import { CANONICAL_EVIDENCES, getEvidenceById } from '@/data/canonical-evidences';
+import {
+  CANONICAL_EVIDENCES,
+  getEvidenceById,
+  getEvidenceByEventName,
+  generateDynamicRoundOptions,
+} from '@/data/canonical-evidences';
 import {
   calculateRivalLockTime,
   generateRivalHypothesis,
@@ -60,6 +65,8 @@ interface GameStoreState {
   playerName: string;
   onlineCount: number;
   currentEvidence: CanonicalEvidence | null;
+  currentRoundOptions: CanonicalEvidence[];
+  selectedOptionEvidence: CanonicalEvidence | null;
   unplayedDeck: string[];
 
   // Ronda y Partida (Match de 5 rondas)
@@ -145,6 +152,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   playerName: getInitialPlayerName(),
   onlineCount: 14,
   currentEvidence: null,
+  currentRoundOptions: [],
+  selectedOptionEvidence: null,
   unplayedDeck: [],
 
   roundNumber: 1,
@@ -292,10 +301,13 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     const isPractice = difficultyMode === 'PRACTICE';
     const lockTarget = calculateRivalLockTime(currentRival.archetype, roundDuration, isPractice);
     const rivalData = generateRivalHypothesis(evidence, currentRival.archetype, isPractice);
+    const dynamicOptions = generateDynamicRoundOptions(evidence, CANONICAL_EVIDENCES);
 
     set({
       phase: 'ROUND_START',
       currentEvidence: evidence,
+      currentRoundOptions: dynamicOptions,
+      selectedOptionEvidence: null,
       timeRemainingSeconds: roundDuration,
       totalTimeSeconds: roundDuration,
       revealedClueIds: [],
@@ -370,24 +382,17 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   useLifeline5050: () => {
-    const { lifelinesRemaining, currentEvidence, eliminatedEventOptions } = get();
+    const { lifelinesRemaining, currentEvidence, currentRoundOptions, eliminatedEventOptions } = get();
     if (lifelinesRemaining <= 0 || !currentEvidence || eliminatedEventOptions.length > 0) return;
 
     soundFx.playLifeline();
 
-    const options = currentEvidence.distractor_events || [
-      'Acontecimiento A',
-      'Acontecimiento B',
-      'Acontecimiento C',
-      currentEvidence.canonical_event,
-    ];
-
-    const incorrectOptions = options.filter(
-      (opt) => opt.toLowerCase() !== currentEvidence.canonical_event.toLowerCase()
+    const incorrectOptions = currentRoundOptions.filter(
+      (opt) => opt.id !== currentEvidence.id
     );
 
     const shuffledIncorrect = shuffleArray(incorrectOptions);
-    const toEliminate = shuffledIncorrect.slice(0, 2);
+    const toEliminate = shuffledIncorrect.slice(0, 2).map((opt) => opt.canonical_event);
 
     set({
       lifelinesRemaining: lifelinesRemaining - 1,
@@ -479,11 +484,22 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   setPlayerHypothesis: (partial: Partial<PlayerHypothesis>) => {
+    let selectedEvidence = get().selectedOptionEvidence;
+    if (partial.event_query) {
+      const found =
+        get().currentRoundOptions.find(
+          (opt) =>
+            opt.canonical_event.toLowerCase().trim() === partial.event_query!.toLowerCase().trim()
+        ) || getEvidenceByEventName(partial.event_query);
+      if (found) selectedEvidence = found;
+    }
+
     set((state) => ({
       playerHypothesis: {
         ...state.playerHypothesis,
         ...partial,
       },
+      selectedOptionEvidence: selectedEvidence,
     }));
   },
 
@@ -499,6 +515,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       roundNumber,
       roundHistory,
       currentEvidence,
+      currentRoundOptions,
+      selectedOptionEvidence,
       playerHypothesis,
       revealedClueIds,
       timeRemainingSeconds,
@@ -564,6 +582,10 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       }
     }
 
+    const selectedEvidenceResolved =
+      selectedOptionEvidence ||
+      (playerHypothesis.event_query ? getEvidenceByEventName(playerHypothesis.event_query) : undefined);
+
     const result: RoundResult = {
       round_number: roundNumber,
       player_score: playerScore,
@@ -576,6 +598,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       rival_clues_used: rivalHypothesisData.cluesUsed,
       rival_lock_seconds_ahead: secondsAhead,
       rival_advantage_reason: rivalAdvantageReason,
+      round_options: currentRoundOptions,
+      selected_evidence: selectedEvidenceResolved,
     };
 
     const updatedHistory = [...roundHistory, result];
@@ -694,6 +718,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     set({
       phase: 'IDLE',
       currentEvidence: null,
+      currentRoundOptions: [],
+      selectedOptionEvidence: null,
       roundNumber: 1,
       roundHistory: [],
       matchSummary: null,
